@@ -11,7 +11,7 @@ name = "magicbridge_settings"
 path = "src/lib.rs"
 
 [[bin]]
-name = "magicbridge-settings"
+name = "magicbridge"
 path = "src/main.rs"
 
 [dependencies]

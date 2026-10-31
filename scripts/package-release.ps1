@@ -87,18 +87,15 @@ if (-not $SkipBuild) {
 
 # 2. Verify release binaries exist
 Write-Host "`n[2/5] Verifying release binaries and assets..." -ForegroundColor Cyan
+$UnifiedExe = Join-Path $RepoRoot "target\release\magicbridge.exe"
 $AgentExe = Join-Path $RepoRoot "target\release\magicbridge-agent.exe"
-$SettingsExe = Join-Path $RepoRoot "target\release\magicbridge-settings.exe"
 $LocalesSrc = Join-Path $RepoRoot "crates\settings\locales"
 $ReadmeSrc = Join-Path $RepoRoot "README.md"
 $LicenseSrc = Join-Path $RepoRoot "LICENSE"
 $UserGuideSrc = Join-Path $RepoRoot "docs\user-guide.md"
 
-if (-not (Test-Path $AgentExe)) {
-    throw "Required binary missing: $AgentExe"
-}
-if (-not (Test-Path $SettingsExe)) {
-    throw "Required binary missing: $SettingsExe"
+if (-not (Test-Path $UnifiedExe)) {
+    throw "Required unified binary missing: $UnifiedExe"
 }
 if (-not (Test-Path $LocalesSrc)) {
     throw "Locales directory missing: $LocalesSrc"
@@ -110,8 +107,10 @@ if (-not (Test-Path $LicenseSrc)) {
     throw "LICENSE missing: $LicenseSrc"
 }
 
-Write-Host "  - Found agent binary: $AgentExe" -ForegroundColor Green
-Write-Host "  - Found settings binary: $SettingsExe" -ForegroundColor Green
+Write-Host "  - Found unified binary: $UnifiedExe" -ForegroundColor Green
+if (Test-Path $AgentExe) {
+    Write-Host "  - Found agent binary: $AgentExe" -ForegroundColor Green
+}
 Write-Host "  - Found translations: $LocalesSrc" -ForegroundColor Green
 Write-Host "  - Found documentation and license." -ForegroundColor Green
 
@@ -130,9 +129,14 @@ if (Test-Path $StagingDir) {
 }
 New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
 
-# Copy binaries
-Copy-Item -Path $AgentExe -Destination (Join-Path $StagingDir "magicbridge-agent.exe") -Force
-Copy-Item -Path $SettingsExe -Destination (Join-Path $StagingDir "magicbridge-settings.exe") -Force
+# Copy unified binary as both magicbridge.exe and MagicBridge-Setup.exe
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $StagingDir "magicbridge.exe") -Force
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $StagingDir "MagicBridge-Setup.exe") -Force
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $AbsoluteOutputDir "MagicBridge-v$Version-Setup.exe") -Force
+
+if (Test-Path $AgentExe) {
+    Copy-Item -Path $AgentExe -Destination (Join-Path $StagingDir "magicbridge-agent.exe") -Force
+}
 
 # Copy locales
 $StagingLocales = Join-Path $StagingDir "locales"

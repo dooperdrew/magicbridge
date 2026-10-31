@@ -183,10 +183,47 @@ pub fn show(
                         KeyboardLayout::IsoFrench,
                         "ISO French",
                     );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::IsoSpanish,
+                        "ISO Spanish",
+                    );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::IsoPortuguese,
+                        "ISO Portuguese",
+                    );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::IsoSwiss,
+                        "ISO Swiss",
+                    );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::IsoNordic,
+                        "ISO Nordic",
+                    );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::JapaneseJis,
+                        "Japanese JIS",
+                    );
                 });
             let combo_id = combo.response.id;
             combo.response.on_hover_text(i18n.t("profile.layout"));
             crate::set_accessible_name(ui, combo_id, i18n.t("profile.layout"));
+
+            if ui
+                .button(format!("🔍 {}", i18n.t("profile.auto_detect")))
+                .on_hover_text(i18n.t("profile.auto_detect"))
+                .clicked()
+            {
+                let detected = crate::detect_windows_keyboard_layout();
+                if detected != profile.layout {
+                    profile.layout = detected;
+                    change = Some(ConfigChange::Modified);
+                }
+            }
 
             if selected_layout != profile.layout {
                 profile.layout = selected_layout;
@@ -309,8 +346,12 @@ pub fn show(
     );
 
     if let Some(clicked_id) = keyboard_response {
-        state.editor.selected_key_id = Some(clicked_id);
-        sync_editor_with_selection(&mut state.editor, config, state.active_layer);
+        if state.editor.selected_key_id.as_deref() == Some(&clicked_id) {
+            state.editor.selected_key_id = None;
+        } else {
+            state.editor.selected_key_id = Some(clicked_id);
+            sync_editor_with_selection(&mut state.editor, config, state.active_layer);
+        }
     }
 
     ui.separator();
@@ -341,6 +382,7 @@ pub fn calculate_unit_size(available_width: f32) -> f32 {
 }
 
 /// Dynamically calculates key font size in points based on unit size, key width, cluster, and label length.
+/// Clamps to ensure labels never visually overflow the key width boundary.
 #[must_use]
 pub fn calculate_key_font_size(
     unit_size: f32,
@@ -348,7 +390,7 @@ pub fn calculate_key_font_size(
     cluster: KeyCluster,
     label_len: usize,
 ) -> f32 {
-    if key_width >= 1.5 {
+    let base_size = if key_width >= 1.5 {
         if label_len > 6 {
             (unit_size * 0.28).clamp(7.0, 12.5)
         } else {
@@ -362,6 +404,14 @@ pub fn calculate_key_font_size(
         (unit_size * 0.26).clamp(6.5, 11.5)
     } else {
         (unit_size * 0.22).clamp(6.0, 10.0)
+    };
+
+    if key_width < 1.5 && label_len > 3 {
+        let key_pixel_width = key_width * unit_size;
+        let max_font_for_width = (key_pixel_width * 0.9) / (label_len as f32 * 0.55);
+        base_size.min(max_font_for_width).max(6.0)
+    } else {
+        base_size
     }
 }
 
@@ -595,6 +645,13 @@ fn render_key_editor(
                         ActiveLayer::Fn => i18n.t("keyboard.layer_fn"),
                     }
                 ));
+                if ui
+                    .button(format!("✕ {}", i18n.t("editor.deselect_key")))
+                    .on_hover_text(i18n.t("editor.deselect_key"))
+                    .clicked()
+                {
+                    state.editor.selected_key_id = None;
+                }
             });
 
             ui.add_space(2.0);
@@ -668,6 +725,24 @@ fn render_key_editor(
             }
         } else {
             ui.label(i18n.t("editor.no_selection"));
+            ui.add_space(4.0);
+            egui::Frame::group(ui.style())
+                .fill(ui.visuals().window_fill())
+                .corner_radius(CornerRadius::same(6))
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new(format!("💡 {}", i18n.t("editor.guide_title")))
+                                .strong(),
+                        );
+                        ui.add_space(2.0);
+                        ui.label(i18n.t("editor.guide_p1"));
+                        ui.label(i18n.t("editor.guide_p2"));
+                        ui.label(i18n.t("editor.guide_p3"));
+                        ui.label(i18n.t("editor.guide_p4"));
+                        ui.label(i18n.t("editor.guide_p5"));
+                    });
+                });
         }
     });
 
@@ -902,6 +977,19 @@ fn render_profile_dialogs(
                             ui.selectable_value(layout, KeyboardLayout::IsoUk, "ISO UK");
                             ui.selectable_value(layout, KeyboardLayout::IsoGerman, "ISO German");
                             ui.selectable_value(layout, KeyboardLayout::IsoFrench, "ISO French");
+                            ui.selectable_value(layout, KeyboardLayout::IsoSpanish, "ISO Spanish");
+                            ui.selectable_value(
+                                layout,
+                                KeyboardLayout::IsoPortuguese,
+                                "ISO Portuguese",
+                            );
+                            ui.selectable_value(layout, KeyboardLayout::IsoSwiss, "ISO Swiss");
+                            ui.selectable_value(layout, KeyboardLayout::IsoNordic, "ISO Nordic");
+                            ui.selectable_value(
+                                layout,
+                                KeyboardLayout::JapaneseJis,
+                                "Japanese JIS",
+                            );
                         });
                     let combo_id = combo.response.id;
                     combo.response.on_hover_text(i18n.t("profile.layout"));

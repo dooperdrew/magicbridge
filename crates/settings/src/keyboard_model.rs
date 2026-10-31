@@ -945,109 +945,259 @@ impl A1843Model {
     /// Returns the localized visual legend for a key given the active `KeyboardLayout`.
     #[must_use]
     pub fn get_key_label(&self, key_id: &str, layout: &KeyboardLayout) -> String {
-        match layout {
+        let localized = match layout {
             KeyboardLayout::IsoItalian => Self::label_italian(key_id),
             KeyboardLayout::AnsiUs => Self::label_us(key_id),
             KeyboardLayout::IsoUk => Self::label_uk(key_id),
             KeyboardLayout::IsoGerman => Self::label_german(key_id),
             KeyboardLayout::IsoFrench => Self::label_french(key_id),
+            KeyboardLayout::IsoSpanish => Self::label_spanish(key_id),
+            KeyboardLayout::IsoPortuguese => Self::label_portuguese(key_id),
+            KeyboardLayout::IsoSwiss => Self::label_swiss(key_id),
+            KeyboardLayout::IsoNordic => Self::label_nordic(key_id),
+            KeyboardLayout::JapaneseJis => Self::label_japanese(key_id),
             KeyboardLayout::Custom(_) => Self::label_italian(key_id),
+        };
+
+        localized.unwrap_or_else(|| Self::label_default(key_id))
+    }
+
+    /// Default clean visual labels for standard modifiers, keypad, and navigation keys.
+    fn label_default(id: &str) -> String {
+        match id {
+            "LeftControl" | "RightControl" => "ctrl".to_string(),
+            "LeftOption" | "RightOption" => "opt".to_string(),
+            "LeftCommand" | "RightCommand" => "cmd".to_string(),
+            "LeftShift" | "RightShift" => "shift".to_string(),
+            "CapsLock" => "caps".to_string(),
+            "Escape" => "esc".to_string(),
+            "Tab" => "tab".to_string(),
+            "Space" => "space".to_string(),
+            "Backspace" => "delete".to_string(),
+            "Delete" => "del".to_string(),
+            "Enter" => "return".to_string(),
+            "Clear" => "clear".to_string(),
+            "Home" => "home".to_string(),
+            "End" => "end".to_string(),
+            "PageUp" => "pg up".to_string(),
+            "PageDown" => "pg dn".to_string(),
+            "Left" => "←".to_string(),
+            "Right" => "→".to_string(),
+            "Up" => "↑".to_string(),
+            "Down" => "↓".to_string(),
+            "NumEquals" => "=".to_string(),
+            "NumDivide" => "/".to_string(),
+            "NumMultiply" => "*".to_string(),
+            "NumSubtract" => "-".to_string(),
+            "NumAdd" => "+".to_string(),
+            "NumEnter" => "enter".to_string(),
+            "NumDecimal" => ".".to_string(),
+            "Num0" => "0".to_string(),
+            "Num1" => "1".to_string(),
+            "Num2" => "2".to_string(),
+            "Num3" => "3".to_string(),
+            "Num4" => "4".to_string(),
+            "Num5" => "5".to_string(),
+            "Num6" => "6".to_string(),
+            "Num7" => "7".to_string(),
+            "Num8" => "8".to_string(),
+            "Num9" => "9".to_string(),
+            other => other.to_string(),
         }
     }
 
-    fn label_italian(id: &str) -> String {
-        match id {
-            "Grave" => "\\ |".to_string(),
-            "1" => "1 !".to_string(),
-            "2" => "2 \"".to_string(),
-            "3" => "3 £".to_string(),
-            "4" => "4 $".to_string(),
-            "5" => "5 %".to_string(),
-            "6" => "6 &".to_string(),
-            "7" => "7 /".to_string(),
-            "8" => "8 (".to_string(),
-            "9" => "9 )".to_string(),
-            "0" => "0 =".to_string(),
-            "Minus" => "' ?".to_string(),
-            "Equals" => "ì ^".to_string(),
-            "LBracket" => "è é [".to_string(),
-            "RBracket" => "+ * ]".to_string(),
-            "Backslash" => "ù §".to_string(),
-            "Semicolon" => "ò ç @".to_string(),
-            "Quote" => "à ° #".to_string(),
-            "IsoLessGreater" => "< >".to_string(),
-            "Comma" => ", ;".to_string(),
-            "Period" => ". :".to_string(),
-            "Slash" => "- _".to_string(),
-            _ => id.to_string(),
-        }
+    fn label_italian(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "\\ |",
+            "1" => "1 !",
+            "2" => "2 \"",
+            "3" => "3 £",
+            "4" => "4 $",
+            "5" => "5 %",
+            "6" => "6 &",
+            "7" => "7 /",
+            "8" => "8 (",
+            "9" => "9 )",
+            "0" => "0 =",
+            "Minus" => "' ?",
+            "Equals" => "ì ^",
+            "LBracket" => "è é [",
+            "RBracket" => "+ * ]",
+            "Backslash" => "ù §",
+            "Semicolon" => "ò ç @",
+            "Quote" => "à ° #",
+            "IsoLessGreater" => "< >",
+            "Comma" => ", ;",
+            "Period" => ". :",
+            "Slash" => "- _",
+            _ => return None,
+        };
+        Some(s.to_string())
     }
 
-    fn label_us(id: &str) -> String {
-        match id {
-            "Grave" => "` ~".to_string(),
-            "1" => "1 !".to_string(),
-            "2" => "2 @".to_string(),
-            "3" => "3 #".to_string(),
-            "4" => "4 $".to_string(),
-            "5" => "5 %".to_string(),
-            "6" => "6 ^".to_string(),
-            "7" => "7 &".to_string(),
-            "8" => "8 *".to_string(),
-            "9" => "9 (".to_string(),
-            "0" => "0 )".to_string(),
-            "Minus" => "- _".to_string(),
-            "Equals" => "= +".to_string(),
-            "LBracket" => "[ {".to_string(),
-            "RBracket" => "] }".to_string(),
-            "Backslash" => "\\ |".to_string(),
-            "Semicolon" => "; :".to_string(),
-            "Quote" => "' \"".to_string(),
-            "IsoLessGreater" => "".to_string(),
-            "Comma" => ", <".to_string(),
-            "Period" => ". >".to_string(),
-            "Slash" => "/ ?".to_string(),
-            _ => id.to_string(),
-        }
+    fn label_us(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "` ~",
+            "1" => "1 !",
+            "2" => "2 @",
+            "3" => "3 #",
+            "4" => "4 $",
+            "5" => "5 %",
+            "6" => "6 ^",
+            "7" => "7 &",
+            "8" => "8 *",
+            "9" => "9 (",
+            "0" => "0 )",
+            "Minus" => "- _",
+            "Equals" => "= +",
+            "LBracket" => "[ {",
+            "RBracket" => "] }",
+            "Backslash" => "\\ |",
+            "Semicolon" => "; :",
+            "Quote" => "' \"",
+            "IsoLessGreater" => "",
+            "Comma" => ", <",
+            "Period" => ". >",
+            "Slash" => "/ ?",
+            _ => return None,
+        };
+        Some(s.to_string())
     }
 
-    fn label_uk(id: &str) -> String {
+    fn label_uk(id: &str) -> Option<String> {
         match id {
-            "Grave" => "` ¬".to_string(),
-            "2" => "2 \"".to_string(),
-            "3" => "3 £".to_string(),
-            "Minus" => "- _".to_string(),
-            "Equals" => "= +".to_string(),
-            "Quote" => "' @".to_string(),
-            "Backslash" => "# ~".to_string(),
+            "Grave" => Some("` ¬".to_string()),
+            "2" => Some("2 \"".to_string()),
+            "3" => Some("3 £".to_string()),
+            "Minus" => Some("- _".to_string()),
+            "Equals" => Some("= +".to_string()),
+            "Quote" => Some("' @".to_string()),
+            "Backslash" => Some("# ~".to_string()),
             _ => Self::label_us(id),
         }
     }
 
-    fn label_german(id: &str) -> String {
-        match id {
-            "Grave" => "^ °".to_string(),
-            "Z" => "Y".to_string(),
-            "Y" => "Z".to_string(),
-            "LBracket" => "Ü".to_string(),
-            "RBracket" => "+ *".to_string(),
-            "Semicolon" => "Ö".to_string(),
-            "Quote" => "Ä".to_string(),
-            "Minus" => "ß ?".to_string(),
-            _ => id.to_string(),
-        }
+    fn label_german(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "^ °",
+            "Z" => "Y",
+            "Y" => "Z",
+            "LBracket" => "Ü",
+            "RBracket" => "+ *",
+            "Semicolon" => "Ö",
+            "Quote" => "Ä",
+            "Minus" => "ß ?",
+            _ => return None,
+        };
+        Some(s.to_string())
     }
 
-    fn label_french(id: &str) -> String {
-        match id {
-            "A" => "Q".to_string(),
-            "Q" => "A".to_string(),
-            "Z" => "W".to_string(),
-            "W" => "Z".to_string(),
-            "M" => ", ?".to_string(),
-            "Comma" => "; .".to_string(),
-            _ => id.to_string(),
-        }
+    fn label_french(id: &str) -> Option<String> {
+        let s = match id {
+            "A" => "Q",
+            "Q" => "A",
+            "Z" => "W",
+            "W" => "Z",
+            "M" => ", ?",
+            "Comma" => "; .",
+            _ => return None,
+        };
+        Some(s.to_string())
+    }
+
+    fn label_spanish(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "º ª \\",
+            "1" => "1 ! |",
+            "2" => "2 \" @",
+            "3" => "3 · #",
+            "4" => "4 $ ~",
+            "Minus" => "' ?",
+            "Equals" => "¿ ¡",
+            "LBracket" => "` ^ [",
+            "RBracket" => "+ * ]",
+            "Semicolon" => "ñ Ñ",
+            "Quote" => "´ ¨ {",
+            "Backslash" => "ç Ç }",
+            "IsoLessGreater" => "< >",
+            "Comma" => ", ;",
+            "Period" => ". :",
+            "Slash" => "- _",
+            _ => return None,
+        };
+        Some(s.to_string())
+    }
+
+    fn label_portuguese(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "' \"",
+            "2" => "2 \" @",
+            "3" => "3 # £",
+            "LBracket" => "+ *",
+            "RBracket" => "´ `",
+            "Semicolon" => "ç Ç",
+            "Quote" => "~ ^",
+            "Backslash" => "\\ |",
+            "IsoLessGreater" => "< >",
+            "Comma" => ", ;",
+            "Period" => ". :",
+            "Slash" => "- _",
+            _ => return None,
+        };
+        Some(s.to_string())
+    }
+
+    fn label_swiss(id: &str) -> Option<String> {
+        let s = match id {
+            "Z" => "Y",
+            "Y" => "Z",
+            "Grave" => "§ °",
+            "1" => "1 +",
+            "2" => "2 \" @",
+            "3" => "3 * #",
+            "Minus" => "' ?",
+            "Equals" => "^ `",
+            "LBracket" => "è ü",
+            "RBracket" => "¨ !",
+            "Semicolon" => "é ö",
+            "Quote" => "à ä",
+            "Backslash" => "$ £",
+            _ => return None,
+        };
+        Some(s.to_string())
+    }
+
+    fn label_nordic(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "§ ½",
+            "Minus" => "+ ? \\",
+            "Equals" => "´ `",
+            "LBracket" => "Å",
+            "RBracket" => "¨ ^ ~",
+            "Semicolon" => "Ö",
+            "Quote" => "Ä",
+            "Backslash" => "' *",
+            "IsoLessGreater" => "< > |",
+            "Comma" => ", ;",
+            "Period" => ". :",
+            "Slash" => "- _",
+            _ => return None,
+        };
+        Some(s.to_string())
+    }
+
+    fn label_japanese(id: &str) -> Option<String> {
+        let s = match id {
+            "Grave" => "半角",
+            "Equals" => "^ ~",
+            "LBracket" => "@ `",
+            "RBracket" => "[ {",
+            "Backslash" => "] }",
+            "Quote" => ": *",
+            "Semicolon" => "; +",
+            _ => return None,
+        };
+        Some(s.to_string())
     }
 }
 

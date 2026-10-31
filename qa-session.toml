@@ -6,8 +6,8 @@
 session_name = "magicbridge-settings-qa"
 
 # Path to the compiled MagicBridge Settings GUI binary (eframe/egui 0.31)
-target_exe = 'C:\Dev\AgenticAI\magicbridge\target\release\magicbridge-settings.exe'
-target_args = []
+target_exe = 'target\release\magicbridge.exe'
+target_args = ["--settings"]
 
 # Window title filter to verify or attach
 target_window_title = "MagicBridge Settings"

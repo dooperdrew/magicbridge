@@ -373,7 +373,18 @@ fn render_step_1_layout(
     ui.vertical(|ui| {
         ui.heading(i18n.t("wizard.layout_title"));
         ui.label(i18n.t("wizard.layout_desc"));
-        ui.add_space(8.0);
+        ui.add_space(4.0);
+
+        ui.horizontal(|ui| {
+            if ui
+                .button(format!("🔍 {}", i18n.t("wizard.btn_detect_windows")))
+                .on_hover_text(i18n.t("wizard.btn_detect_windows"))
+                .clicked()
+            {
+                state.selected_layout = crate::detect_windows_keyboard_layout();
+            }
+        });
+        ui.add_space(4.0);
 
         let layouts = [
             (
@@ -405,6 +416,36 @@ fn render_step_1_layout(
                 "FR",
                 "wizard.layout_iso_fr",
                 "wizard.layout_iso_fr_desc",
+            ),
+            (
+                KeyboardLayout::IsoSpanish,
+                "ES",
+                "wizard.layout_iso_es",
+                "wizard.layout_iso_es_desc",
+            ),
+            (
+                KeyboardLayout::IsoPortuguese,
+                "PT",
+                "wizard.layout_iso_pt",
+                "wizard.layout_iso_pt_desc",
+            ),
+            (
+                KeyboardLayout::IsoSwiss,
+                "CH",
+                "wizard.layout_iso_ch",
+                "wizard.layout_iso_ch_desc",
+            ),
+            (
+                KeyboardLayout::IsoNordic,
+                "NO/SE/DK/FI",
+                "wizard.layout_iso_nordic",
+                "wizard.layout_iso_nordic_desc",
+            ),
+            (
+                KeyboardLayout::JapaneseJis,
+                "JP",
+                "wizard.layout_jis",
+                "wizard.layout_jis_desc",
             ),
         ];
 

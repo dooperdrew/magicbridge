@@ -4,16 +4,50 @@
 
 pub mod app;
 pub mod i18n;
+pub mod installer;
 pub mod ipc;
 pub mod keyboard_model;
 pub mod views;
 
 pub use app::{MagicBridgeApp, SettingsTab};
 pub use i18n::I18n;
+pub use installer::{
+    InstallOptions, InstallerApp, UninstallerApp, is_installed_location, perform_install,
+    perform_uninstall, run_installer_gui, run_uninstaller_gui,
+};
 pub use ipc::SettingsIpc;
 pub use keyboard_model::{A1843Model, KeyCluster, PhysicalKey};
 pub use views::qa_view::HardwareQaViewState;
 pub use views::wizard_view::{OnboardingWizardState, WizardAction};
+
+/// Detects the current active Windows keyboard input layout.
+#[must_use]
+pub fn detect_windows_keyboard_layout() -> magicbridge_core::KeyboardLayout {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::Input::KeyboardAndMouse::GetKeyboardLayout;
+        // SAFETY: GetKeyboardLayout(0) retrieves the layout handle for the current thread.
+        let hkl = unsafe { GetKeyboardLayout(0) };
+        let lang_id = (hkl.0 as usize & 0xFFFF) as u16;
+        match lang_id {
+            0x0410 => magicbridge_core::KeyboardLayout::IsoItalian,
+            0x0409 => magicbridge_core::KeyboardLayout::AnsiUs,
+            0x0809 => magicbridge_core::KeyboardLayout::IsoUk,
+            0x0407 => magicbridge_core::KeyboardLayout::IsoGerman,
+            0x040C => magicbridge_core::KeyboardLayout::IsoFrench,
+            0x040A => magicbridge_core::KeyboardLayout::IsoSpanish,
+            0x0816 | 0x0416 => magicbridge_core::KeyboardLayout::IsoPortuguese,
+            0x0807 | 0x100C => magicbridge_core::KeyboardLayout::IsoSwiss,
+            0x041D | 0x040B | 0x0406 | 0x0414 => magicbridge_core::KeyboardLayout::IsoNordic,
+            0x0411 => magicbridge_core::KeyboardLayout::JapaneseJis,
+            _ => magicbridge_core::KeyboardLayout::IsoItalian,
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        magicbridge_core::KeyboardLayout::IsoItalian
+    }
+}
 
 /// Sets an explicit accessible name on an AccessKit node for screen-reader and UI automation compliance.
 pub fn set_accessible_name(ui: &egui::Ui, id: egui::Id, name: impl Into<String>) {

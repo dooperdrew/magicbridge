@@ -795,8 +795,8 @@ fn render_qa_visual_keyboard(ui: &mut Ui, state: &mut HardwareQaViewState) {
     }
 }
 
-/// Renders the complete Hardware QA View tab.
-pub fn show(ui: &mut Ui, state: &mut HardwareQaViewState, i18n: &I18n) {
+/// Renders the complete Hardware QA View tab. Returns true when user clicks "Complete Testing".
+pub fn show(ui: &mut Ui, state: &mut HardwareQaViewState, i18n: &I18n) -> bool {
     let mut recorded_this_frame = HashSet::new();
 
     // 1. Keyboard event listener mode
@@ -1049,6 +1049,27 @@ pub fn show(ui: &mut Ui, state: &mut HardwareQaViewState, i18n: &I18n) {
                     });
             });
     }
+
+    ui.add_space(8.0);
+    let mut finished = false;
+    ui.horizontal(|ui| {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let finish_btn = egui::Button::new(
+                RichText::new(i18n.t("qa.btn_done"))
+                    .size(13.0)
+                    .strong()
+                    .color(Color32::WHITE),
+            )
+            .fill(Color32::from_rgb(0, 120, 215))
+            .corner_radius(CornerRadius::same(6));
+
+            if ui.add(finish_btn).clicked() {
+                finished = true;
+            }
+        });
+    });
+
+    finished
 }
 
 #[cfg(test)]

@@ -4,7 +4,45 @@ All development steps, hardware discoveries, architectural decisions, and commit
 
 ---
 
-## 2026-10-27 — Milestone 10.4: Live Battery Tray Badge & Custom GDI Indicator (Completed ✅, closes #15)
+## 2026-10-31 — MagicBridge v0.3.0: Unified Binary, Native Installer & Visual Ergonomics Overhaul (Release ✅, closes #19, #20, #21, #22, #23)
+
+### Objective & Architecture
+- Consolidated the dual-executable architecture (`magicbridge-agent.exe` + `magicbridge-settings.exe`) into a single, unified Windows binary (`magicbridge.exe`) that dispatches between background hook daemon (`--daemon`), native GUI installer wizard (`--install` or outside install dir), native uninstaller (`--uninstall`), and settings GUI.
+- Implemented a zero-elevation native GUI installer/uninstaller wizard that manages `%LOCALAPPDATA%\Programs\MagicBridge`, creates Start Menu and Desktop shortcuts, registers in Windows Settings "Installed apps", and guarantees clean uninstallation.
+- Re-architected first-run user onboarding: when launched fresh without existing configuration, the application forces the Setup Wizard (hardware detection, model, layout, modifier preset, Fn key, autostart) and automatically transitions to the interactive Hardware Key Testing Tool before unlocking the full keyboard editor.
+- Fixed key label overlap bug on the visual A1843 keyboard canvas by replacing verbose struct identifiers (`NumMultiply`, `NumSubtract`, `LeftControl`, `RightCommand`) with clean localized typography (`*`, `-`, `ctrl`, `cmd`), implementing dynamic font scaling with inner keycap width boundary clamping, enabling re-click key deselection, and adding a dedicated `[Deselect Key]` button.
+- Extended keyboard layout support to all major Windows languages: added Windows layout auto-detection via `GetKeyboardLayout(0)` and implemented visual keyboard models for ISO Spanish, ISO Portuguese, ISO Swiss, ISO Nordic, and Japanese JIS.
+
+### Key Deliverables & Bug Fixes
+1. **Single Unified Executable (`magicbridge.exe` — closes #19):**
+   - Exported `run_daemon() -> i32` from `crates/agent/src/lib.rs`.
+   - Unified binary `magicbridge` in `crates/settings` parses command line arguments:
+     - `--daemon`: Runs headless background hook daemon and tray icon without window creation.
+     - `--uninstall`: Runs native egui Uninstaller Wizard.
+     - `--install` or executed outside installed directory (and not in dev target): Runs native egui Setup Wizard.
+     - Default / `--settings`: Automatically verifies/spawns background daemon if not alive, then opens Settings GUI.
+2. **Native GUI Installer & Clean Uninstaller Wizard (`crates/settings/src/installer.rs` — closes #20):**
+   - Per-user installation to `%LOCALAPPDATA%\Programs\MagicBridge` requiring zero administrative privileges.
+   - Creates Windows `.lnk` shortcuts in Start Menu Programs and Desktop via WScript.Shell.
+   - Registers uninstaller metadata in `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\MagicBridge`.
+   - Complete uninstallation terminates running processes, removes shortcuts, deletes registry entries, and cleanly wipes installation and config directories.
+3. **Mandatory First-Run Setup & Testing Flow (closes #21):**
+   - Detects whether `config.toml` existed on launch; starts on `SettingsTab::Wizard` for fresh installations.
+   - When finishing the setup wizard, seamlessly transitions to `SettingsTab::HardwareQa` for interactive key testing.
+   - Added `[Complete Testing & Open Keyboard Editor]` button to transition smoothly to the main editor.
+4. **Visual Keyboard Ergonomics & Overlap Remediation (closes #22):**
+   - In `crates/settings/src/keyboard_model.rs`, replaced `id.to_string()` fallback with `label_default(id)` mapping modifiers and numpad keys to concise symbols (`*`, `-`, `+`, `/`, `ctrl`, `cmd`, `opt`, `del`, `ins`).
+   - Implemented inner keycap width boundary clamping in `calculate_key_font_size` ensuring labels never cross key boundaries.
+   - In `keyboard_view.rs`, re-clicking the currently selected key toggles it off (`selected_key_id = None`).
+   - Added `[Deselect Key]` button in key editor header and an informative instructional card explaining layers, Fn triggering, and modifier presets when no key is selected.
+5. **Universal Windows Keyboard Layout Auto-Detection & Extended Languages (closes #23):**
+   - Implemented `detect_windows_keyboard_layout()` calling Win32 `GetKeyboardLayout(0)`.
+   - Added "Auto-Detect from Windows" buttons in both Profile Settings and Setup Wizard Step 1.
+   - Added visual layout models and localized keymaps for ISO Spanish (`es`), ISO Portuguese (`pt`), ISO Swiss (`ch`), ISO Nordic (`nordic`), and Japanese JIS (`jp`).
+6. **Quality Assurance & Verification:**
+   - Ran `ui-qa-tester` autonomous crawler against `target\release\magicbridge.exe`: 15 steps completed with **0 findings / 0 defects**.
+   - All 143 automated tests in workspace pass.
+   - Packaged release bundle `MagicBridge-v0.3.0-windows-x64.zip` and standalone `MagicBridge-v0.3.0-Setup.exe` with WinGet and Scoop manifests.
 
 ### Objective & Architecture
 - Implemented **IMP-04** (Dynamic Tray Battery Badge) in `crates/agent/src/tray_icon.rs` to render real-time battery status, connection state, charging indicator, and pause status directly on the Windows notification area system tray icon.

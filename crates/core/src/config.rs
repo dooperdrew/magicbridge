@@ -34,6 +34,21 @@ pub enum KeyboardLayout {
     /// French ISO layout (AZERTY).
     #[serde(alias = "iso_fr", alias = "french")]
     IsoFrench,
+    /// Spanish ISO layout.
+    #[serde(alias = "iso_es", alias = "spanish")]
+    IsoSpanish,
+    /// Portuguese ISO layout.
+    #[serde(alias = "iso_pt", alias = "portuguese")]
+    IsoPortuguese,
+    /// Swiss ISO layout (German / French).
+    #[serde(alias = "iso_ch", alias = "swiss")]
+    IsoSwiss,
+    /// Nordic ISO layout (Swedish, Finnish, Danish, Norwegian).
+    #[serde(alias = "iso_nordic", alias = "nordic", alias = "scandinavian")]
+    IsoNordic,
+    /// Japanese JIS layout.
+    #[serde(alias = "jis", alias = "japanese")]
+    JapaneseJis,
     /// Extensible custom or alternative layout label.
     Custom(String),
 }
@@ -46,6 +61,11 @@ impl fmt::Display for KeyboardLayout {
             Self::IsoUk => f.write_str("ISO UK"),
             Self::IsoGerman => f.write_str("ISO German"),
             Self::IsoFrench => f.write_str("ISO French"),
+            Self::IsoSpanish => f.write_str("ISO Spanish"),
+            Self::IsoPortuguese => f.write_str("ISO Portuguese"),
+            Self::IsoSwiss => f.write_str("ISO Swiss"),
+            Self::IsoNordic => f.write_str("ISO Nordic"),
+            Self::JapaneseJis => f.write_str("Japanese JIS"),
             Self::Custom(name) => write!(f, "Custom ({name})"),
         }
     }
