@@ -166,6 +166,21 @@ pub fn show(
             let combo = egui::ComboBox::from_id_salt("layout_selector")
                 .selected_text(current_layout_str)
                 .show_ui(ui, |ui| {
+                    ui.label(
+                        egui::RichText::new("── Detected on this PC ──")
+                            .small()
+                            .weak(),
+                    );
+                    for (name, l) in crate::get_installed_windows_layouts() {
+                        let label = format!("✔ {name}");
+                        ui.selectable_value(&mut selected_layout, l, label);
+                    }
+                    ui.separator();
+                    ui.label(
+                        egui::RichText::new("── All Windows Keyboard Layouts ──")
+                            .small()
+                            .weak(),
+                    );
                     ui.selectable_value(
                         &mut selected_layout,
                         KeyboardLayout::IsoItalian,
@@ -208,6 +223,34 @@ pub fn show(
                         KeyboardLayout::JapaneseJis,
                         "Japanese JIS",
                     );
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Dutch, "Dutch");
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::Polish,
+                        "Polish (Programmers)",
+                    );
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Russian, "Russian");
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::Ukrainian,
+                        "Ukrainian",
+                    );
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::Turkish,
+                        "Turkish (Q / F)",
+                    );
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Czech, "Czech");
+                    ui.selectable_value(
+                        &mut selected_layout,
+                        KeyboardLayout::Hungarian,
+                        "Hungarian",
+                    );
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Greek, "Greek");
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Arabic, "Arabic");
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Hebrew, "Hebrew");
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Korean, "Korean");
+                    ui.selectable_value(&mut selected_layout, KeyboardLayout::Chinese, "Chinese");
                 });
             let combo_id = combo.response.id;
             combo.response.on_hover_text(i18n.t("profile.layout"));

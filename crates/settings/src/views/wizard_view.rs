@@ -383,6 +383,122 @@ fn render_step_1_layout(
             {
                 state.selected_layout = crate::detect_windows_keyboard_layout();
             }
+
+            ui.label(i18n.t("profile.layout"));
+            let current_str = format!("{}", state.selected_layout);
+            egui::ComboBox::from_id_salt("wizard_all_layouts_combo")
+                .selected_text(current_str)
+                .show_ui(ui, |ui| {
+                    ui.label(RichText::new("── Detected on this PC ──").small().weak());
+                    for (name, l) in crate::get_installed_windows_layouts() {
+                        let label = format!("✔ {name}");
+                        ui.selectable_value(&mut state.selected_layout, l, label);
+                    }
+                    ui.separator();
+                    ui.label(
+                        RichText::new("── All Windows Keyboard Layouts ──")
+                            .small()
+                            .weak(),
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoItalian,
+                        "ISO Italian",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::AnsiUs,
+                        "ANSI US",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoUk,
+                        "ISO UK",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoGerman,
+                        "ISO German",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoFrench,
+                        "ISO French",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoSpanish,
+                        "ISO Spanish",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoPortuguese,
+                        "ISO Portuguese",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoSwiss,
+                        "ISO Swiss",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::IsoNordic,
+                        "ISO Nordic",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::JapaneseJis,
+                        "Japanese JIS",
+                    );
+                    ui.selectable_value(&mut state.selected_layout, KeyboardLayout::Dutch, "Dutch");
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Polish,
+                        "Polish",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Russian,
+                        "Russian",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Ukrainian,
+                        "Ukrainian",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Turkish,
+                        "Turkish (Q / F)",
+                    );
+                    ui.selectable_value(&mut state.selected_layout, KeyboardLayout::Czech, "Czech");
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Hungarian,
+                        "Hungarian",
+                    );
+                    ui.selectable_value(&mut state.selected_layout, KeyboardLayout::Greek, "Greek");
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Arabic,
+                        "Arabic",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Hebrew,
+                        "Hebrew",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Korean,
+                        "Korean",
+                    );
+                    ui.selectable_value(
+                        &mut state.selected_layout,
+                        KeyboardLayout::Chinese,
+                        "Chinese",
+                    );
+                });
         });
         ui.add_space(4.0);
 

@@ -43,8 +43,9 @@ All development steps, hardware discoveries, architectural decisions, and commit
    - Added `[Deselect Key]` button in key editor header and an informative instructional card explaining layers, Fn triggering, and modifier presets when no key is selected.
 5. **Universal Windows Keyboard Layout Auto-Detection & Extended Languages (closes #23):**
    - Implemented `detect_windows_keyboard_layout()` calling Win32 `GetKeyboardLayout(0)`.
-   - Added "Auto-Detect from Windows" buttons in both Profile Settings and Setup Wizard Step 1.
-   - Added visual layout models and localized keymaps for ISO Spanish (`es`), ISO Portuguese (`pt`), ISO Swiss (`ch`), ISO Nordic (`nordic`), and Japanese JIS (`jp`).
+   - Implemented `get_installed_windows_layouts()` calling Win32 `GetKeyboardLayoutList` and `GetLocaleInfoW` (`LOCALE_SENGLISHDISPLAYNAME`) to dynamically enumerate all input languages active on the user's specific Windows PC.
+   - Added full catalog of all standard Windows keyboard layouts across the globe: Dutch, Polish (Programmers), Russian, Ukrainian, Turkish (Q/F), Czech, Hungarian, Greek, Arabic, Hebrew, Korean, Chinese, ISO Spanish, ISO Portuguese, ISO Swiss, ISO Nordic, Japanese JIS, ISO Italian, ANSI US, and ISO UK, plus `Custom(String)` for any arbitrary language.
+   - Integrated full Windows layout picker across Settings (Keyboard Profiles), Setup Wizard Step 1, and Native Progressive Setup Wizard Step 4.
 6. **Quality Assurance & Verification:**
    - Ran `ui-qa-tester` autonomous crawler against `target\release\magicbridge.exe`: 15 steps completed with **0 findings / 0 defects**.
    - All 143 automated tests in workspace pass.

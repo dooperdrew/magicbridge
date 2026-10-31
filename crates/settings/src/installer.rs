@@ -715,6 +715,17 @@ impl InstallerApp {
             let combo = egui::ComboBox::from_id_salt("wizard_setup_layout")
                 .selected_text(current_str)
                 .show_ui(ui, |ui| {
+                    ui.label(RichText::new("── Detected on this PC ──").small().weak());
+                    for (name, l) in crate::get_installed_windows_layouts() {
+                        let label = format!("✔ {name}");
+                        ui.selectable_value(&mut self.selected_layout, l, label);
+                    }
+                    ui.separator();
+                    ui.label(
+                        RichText::new("── All Windows Keyboard Layouts ──")
+                            .small()
+                            .weak(),
+                    );
                     ui.selectable_value(
                         &mut self.selected_layout,
                         KeyboardLayout::IsoItalian,
@@ -760,6 +771,54 @@ impl InstallerApp {
                         &mut self.selected_layout,
                         KeyboardLayout::JapaneseJis,
                         "Japanese JIS",
+                    );
+                    ui.selectable_value(&mut self.selected_layout, KeyboardLayout::Dutch, "Dutch");
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Polish,
+                        "Polish (Programmers)",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Russian,
+                        "Russian",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Ukrainian,
+                        "Ukrainian",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Turkish,
+                        "Turkish (Q / F)",
+                    );
+                    ui.selectable_value(&mut self.selected_layout, KeyboardLayout::Czech, "Czech");
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Hungarian,
+                        "Hungarian",
+                    );
+                    ui.selectable_value(&mut self.selected_layout, KeyboardLayout::Greek, "Greek");
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Arabic,
+                        "Arabic",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Hebrew,
+                        "Hebrew",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Korean,
+                        "Korean",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::Chinese,
+                        "Chinese",
                     );
                 });
             combo

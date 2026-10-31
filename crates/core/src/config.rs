@@ -49,7 +49,43 @@ pub enum KeyboardLayout {
     /// Japanese JIS layout.
     #[serde(alias = "jis", alias = "japanese")]
     JapaneseJis,
-    /// Extensible custom or alternative layout label.
+    /// Dutch layout.
+    #[serde(alias = "dutch", alias = "nl")]
+    Dutch,
+    /// Polish layout (Programmers).
+    #[serde(alias = "polish", alias = "pl")]
+    Polish,
+    /// Russian layout.
+    #[serde(alias = "russian", alias = "ru")]
+    Russian,
+    /// Ukrainian layout.
+    #[serde(alias = "ukrainian", alias = "ua")]
+    Ukrainian,
+    /// Turkish layout (Q / F).
+    #[serde(alias = "turkish", alias = "tr")]
+    Turkish,
+    /// Czech layout.
+    #[serde(alias = "czech", alias = "cz")]
+    Czech,
+    /// Hungarian layout.
+    #[serde(alias = "hungarian", alias = "hu")]
+    Hungarian,
+    /// Greek layout.
+    #[serde(alias = "greek", alias = "el")]
+    Greek,
+    /// Arabic layout.
+    #[serde(alias = "arabic", alias = "ar")]
+    Arabic,
+    /// Hebrew layout.
+    #[serde(alias = "hebrew", alias = "he")]
+    Hebrew,
+    /// Korean layout.
+    #[serde(alias = "korean", alias = "ko")]
+    Korean,
+    /// Chinese layout.
+    #[serde(alias = "chinese", alias = "zh")]
+    Chinese,
+    /// Extensible custom or alternative layout label (allows selecting ANY arbitrary Windows language).
     Custom(String),
 }
 
@@ -66,6 +102,18 @@ impl fmt::Display for KeyboardLayout {
             Self::IsoSwiss => f.write_str("ISO Swiss"),
             Self::IsoNordic => f.write_str("ISO Nordic"),
             Self::JapaneseJis => f.write_str("Japanese JIS"),
+            Self::Dutch => f.write_str("Dutch"),
+            Self::Polish => f.write_str("Polish"),
+            Self::Russian => f.write_str("Russian"),
+            Self::Ukrainian => f.write_str("Ukrainian"),
+            Self::Turkish => f.write_str("Turkish"),
+            Self::Czech => f.write_str("Czech"),
+            Self::Hungarian => f.write_str("Hungarian"),
+            Self::Greek => f.write_str("Greek"),
+            Self::Arabic => f.write_str("Arabic"),
+            Self::Hebrew => f.write_str("Hebrew"),
+            Self::Korean => f.write_str("Korean"),
+            Self::Chinese => f.write_str("Chinese"),
             Self::Custom(name) => write!(f, "Custom ({name})"),
         }
     }

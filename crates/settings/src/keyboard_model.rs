@@ -956,7 +956,7 @@ impl A1843Model {
             KeyboardLayout::IsoSwiss => Self::label_swiss(key_id),
             KeyboardLayout::IsoNordic => Self::label_nordic(key_id),
             KeyboardLayout::JapaneseJis => Self::label_japanese(key_id),
-            KeyboardLayout::Custom(_) => Self::label_italian(key_id),
+            _ => Self::label_us(key_id),
         };
 
         localized.unwrap_or_else(|| Self::label_default(key_id))

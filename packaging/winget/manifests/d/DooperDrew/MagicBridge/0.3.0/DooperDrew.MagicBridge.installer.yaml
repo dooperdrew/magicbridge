@@ -11,7 +11,7 @@ NestedInstallerFiles:
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/DooperDrew/magicbridge/releases/download/v0.3.0/MagicBridge-v0.3.0-windows-x64.zip
-    InstallerSha256: 5FFD66EA885A841BDAAE18BE12E821D388574D3BA86C8B7F4DBBB6DD7BEF7DBB
+    InstallerSha256: 55D45912949334F6B73CC11815CAAB403014EBFF8003597F8BD0191634034DF8
     UpgradeBehavior: install
 ManifestType: installer
 ManifestVersion: 1.9.0
