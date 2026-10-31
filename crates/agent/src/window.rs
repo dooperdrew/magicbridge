@@ -563,16 +563,19 @@ pub fn run_message_pump() -> i32 {
     msg.wParam.0 as i32
 }
 
-/// Attempts to spawn the settings application (`magicbridge-settings.exe`).
+/// Attempts to spawn the settings application (`magicbridge.exe --settings`).
 pub fn launch_settings() {
-    let mut cmd = None;
     if let Ok(exe_path) = std::env::current_exe() {
-        let sibling = exe_path.with_file_name("magicbridge-settings.exe");
-        if sibling.exists() {
-            cmd = Some(std::process::Command::new(sibling));
+        let mut cmd = std::process::Command::new(&exe_path);
+        cmd.arg("--settings");
+        if cmd.spawn().is_ok() {
+            return;
         }
     }
-    let mut command = cmd.unwrap_or_else(|| std::process::Command::new("magicbridge-settings.exe"));
+
+    // Fallback: look for magicbridge.exe on PATH or in current directory
+    let mut command = std::process::Command::new("magicbridge.exe");
+    command.arg("--settings");
     let _ = command.spawn();
 }
 

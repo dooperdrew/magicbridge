@@ -88,6 +88,22 @@ pub fn show(ui: &mut Ui, daemon_status: Option<&DaemonStatus>, i18n: &I18n) {
 
         ui.separator();
 
+        if crate::is_installed_location() {
+            if ui
+                .button(
+                    egui::RichText::new(i18n.t("about.uninstall_button"))
+                        .color(Color32::from_rgb(220, 50, 40)),
+                )
+                .clicked()
+                && let Ok(current_exe) = std::env::current_exe()
+            {
+                let _ = std::process::Command::new(current_exe)
+                    .arg("--uninstall")
+                    .spawn();
+            }
+            ui.add_space(4.0);
+        }
+
         ui.label(i18n.t("about.non_admin_note"));
         ui.label(i18n.t("about.license"));
     });

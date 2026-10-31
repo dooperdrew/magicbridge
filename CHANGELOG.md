@@ -14,18 +14,24 @@ All development steps, hardware discoveries, architectural decisions, and commit
 - Extended keyboard layout support to all major Windows languages: added Windows layout auto-detection via `GetKeyboardLayout(0)` and implemented visual keyboard models for ISO Spanish, ISO Portuguese, ISO Swiss, ISO Nordic, and Japanese JIS.
 
 ### Key Deliverables & Bug Fixes
-1. **Single Unified Executable (`magicbridge.exe` — closes #19):**
+1. **Single Unified Executable & Standalone Installer Distribution (`magicbridge.exe` — closes #19):**
    - Exported `run_daemon() -> i32` from `crates/agent/src/lib.rs`.
    - Unified binary `magicbridge` in `crates/settings` parses command line arguments:
      - `--daemon`: Runs headless background hook daemon and tray icon without window creation.
      - `--uninstall`: Runs native egui Uninstaller Wizard.
-     - `--install` or executed outside installed directory (and not in dev target): Runs native egui Setup Wizard.
-     - Default / `--settings`: Automatically verifies/spawns background daemon if not alive, then opens Settings GUI.
-2. **Native GUI Installer & Clean Uninstaller Wizard (`crates/settings/src/installer.rs` — closes #20):**
-   - Per-user installation to `%LOCALAPPDATA%\Programs\MagicBridge` requiring zero administrative privileges.
-   - Creates Windows `.lnk` shortcuts in Start Menu Programs and Desktop via WScript.Shell.
-   - Registers uninstaller metadata in `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\MagicBridge`.
-   - Complete uninstallation terminates running processes, removes shortcuts, deletes registry entries, and cleanly wipes installation and config directories.
+     - `--install` or filename matching `*setup*.exe`: Runs native egui 5-step Setup Wizard.
+     - Default / `--settings`: Automatically verifies/spawns background daemon if not alive, and ALWAYS opens the Settings GUI directly (never blocks or hijacks user access).
+   - Cleaned distribution packaging in `scripts/package-release.ps1`: eliminated secondary executable clutter by producing a single standalone installer (`MagicBridge-Setup.exe` / `MagicBridge-v0.3.0-Setup.exe`) and a clean portable archive (`MagicBridge-v0.3.0-portable.zip`) containing strictly `magicbridge.exe` and translation resources.
+2. **Progressive Windows Setup Wizard & Clean Uninstaller (`crates/settings/src/installer.rs` — closes #20):**
+   - Redesigned installer as a true 5-step Windows Wizard with step breadcrumbs header (`1. Welcome` › `2. Options` › `3. Installing` › `4. Initial Setup` › `5. Ready`).
+   - Clean basic options presentation by default (Desktop shortcut, autostart), with all advanced configurations (custom directory path, start menu shortcuts) masked behind a collapsible `[ ▸ Advanced Options ]` toggle.
+   - Real animated installation progress bar with granular status text and background daemon startup.
+   - Initial hardware detection probe (USB/Bluetooth + battery percentage) and first-run layout/modifier selection integrated into Step 4.
+   - Complete uninstallation wizard (`--uninstall`), accessible via Windows Settings (Add/Remove Programs), Start Menu (`Uninstall MagicBridge.lnk`), and the Settings GUI (General and About views).
+3. **Seamless Settings Panel Accessibility:**
+   - Guaranteed immediate access to the full visual keyboard editor upon opening `magicbridge.exe` (defaults `current_tab` to `SettingsTab::Keyboard`).
+   - Fixed Win32 tray menu click handler in `crates/agent/src/window.rs` to spawn `current_exe() --settings` instead of legacy executable name.
+   - Added Installation & Maintenance section to General Settings view allowing one-click installation or uninstallation.
 3. **Mandatory First-Run Setup & Testing Flow (closes #21):**
    - Detects whether `config.toml` existed on launch; starts on `SettingsTab::Wizard` for fresh installations.
    - When finishing the setup wizard, seamlessly transitions to `SettingsTab::HardwareQa` for interactive key testing.

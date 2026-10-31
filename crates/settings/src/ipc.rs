@@ -85,26 +85,29 @@ impl SettingsIpc {
         }
     }
 
-    /// Attempts to locate the `magicbridge-agent.exe` executable on the host system.
+    /// Attempts to locate the `magicbridge.exe` executable on the host system.
     #[must_use]
     pub fn find_agent_exe() -> Option<PathBuf> {
-        // 1. Check beside the running settings executable
+        // 1. Current executable itself
         if let Ok(current_exe) = std::env::current_exe()
-            && let Some(dir) = current_exe.parent()
+            && current_exe.is_file()
         {
-            let candidate = dir.join("magicbridge-agent.exe");
-            if candidate.is_file() {
-                return Some(candidate);
-            }
+            return Some(current_exe);
         }
 
-        // 2. Check cargo target build dirs for development
+        // 2. Installed path
+        let installed = crate::installer::default_install_dir().join("magicbridge.exe");
+        if installed.is_file() {
+            return Some(installed);
+        }
+
+        // 3. Check cargo target build dirs for development
         let dev_candidates = [
-            Path::new("target/release/magicbridge-agent.exe"),
-            Path::new("target/debug/magicbridge-agent.exe"),
-            Path::new("../target/release/magicbridge-agent.exe"),
-            Path::new("../target/debug/magicbridge-agent.exe"),
-            Path::new("magicbridge-agent.exe"),
+            Path::new("target/release/magicbridge.exe"),
+            Path::new("target/debug/magicbridge.exe"),
+            Path::new("../target/release/magicbridge.exe"),
+            Path::new("../target/debug/magicbridge.exe"),
+            Path::new("magicbridge.exe"),
         ];
 
         for c in dev_candidates {
@@ -119,19 +122,18 @@ impl SettingsIpc {
         None
     }
 
-    /// Launches `magicbridge-agent.exe` in the background.
+    /// Launches the background agent daemon (`magicbridge.exe --daemon`).
     pub fn launch_agent() -> Result<(), String> {
-        let exe = Self::find_agent_exe().ok_or_else(|| {
-            "magicbridge-agent.exe could not be found beside settings executable or in target/"
-                .to_string()
-        })?;
+        let exe = Self::find_agent_exe()
+            .ok_or_else(|| "magicbridge.exe could not be found to launch daemon".to_string())?;
 
         Command::new(&exe)
+            .arg("--daemon")
             .spawn()
             .map_err(|e| format!("Failed to spawn {}: {e}", exe.display()))?;
 
         // Give the agent process a moment to initialize its IPC listener
-        std::thread::sleep(Duration::from_millis(200));
+        std::thread::sleep(Duration::from_millis(300));
         Ok(())
     }
 

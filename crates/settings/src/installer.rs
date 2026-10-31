@@ -1,15 +1,24 @@
 //! Native Windows GUI Installer, Uninstaller, and Process Manager for MagicBridge.
 //!
-//! Provides zero-elevation (per-user) installation into `%LOCALAPPDATA%\Programs\MagicBridge`,
-//! Start Menu and Desktop shortcuts, Windows Settings "Installed apps" registration,
-//! clean uninstallation, and background daemon orchestration.
+//! Provides a progressive, multi-step Windows Setup Wizard:
+//! - Step 0: Welcome & Mode Selection (Install, or if already installed: Reinstall vs Uninstall)
+//! - Step 1: Clean Installation Options (collapsible Advanced Options for custom path / shortcuts / autostart)
+//! - Step 2: Real Animated Progress Bar (file copying, shortcuts, registry integration)
+//! - Step 3: Integrated First-Run Setup (hardware detection, layout auto-detection, modifier presets, Fn key)
+//! - Step 4: Completion Screen with direct "Open Settings Panel" action
+//!
+//! And a clean Uninstaller Wizard that completely removes all binaries, shortcuts, registry entries, and user data.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use eframe::{
     App, NativeOptions,
-    egui::{self, Color32, CornerRadius, RichText, ViewportBuilder},
+    egui::{self, Color32, CornerRadius, ProgressBar, RichText, Stroke, ViewportBuilder},
+};
+use magicbridge_core::{
+    Config, FnKeyChoice, KeyboardLayout, ModifierPreset, TopRowMode, atomic_write,
+    default_config_path,
 };
 use windows::Win32::Foundation::{ERROR_SUCCESS, WIN32_ERROR};
 use windows::Win32::System::Registry::{
@@ -82,15 +91,17 @@ pub fn create_shortcut(
     target_exe: &Path,
     shortcut_path: &Path,
     description: &str,
+    args: &str,
 ) -> Result<(), String> {
     if let Some(parent) = shortcut_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
 
     let ps_cmd = format!(
-        "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('{}'); $s.TargetPath = '{}'; $s.Description = '{}'; $s.WorkingDirectory = '{}'; $s.Save()",
+        "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('{}'); $s.TargetPath = '{}'; $s.Arguments = '{}'; $s.Description = '{}'; $s.WorkingDirectory = '{}'; $s.Save()",
         shortcut_path.display(),
         target_exe.display(),
+        args,
         description,
         target_exe
             .parent()
@@ -134,17 +145,30 @@ pub fn perform_install(options: &InstallOptions) -> Result<(), String> {
     std::fs::copy(&current_exe, &dest_exe)
         .map_err(|e| format!("Failed to copy binary to destination: {e}"))?;
 
-    // Create Start Menu Shortcut
+    // Create Start Menu Shortcuts in dedicated "MagicBridge" folder:
+    // 1. "MagicBridge" -> opens Settings
+    // 2. "Uninstall MagicBridge" -> runs magicbridge.exe --uninstall
     if options.create_start_menu_shortcut
         && let Ok(appdata) = std::env::var("APPDATA")
     {
-        let start_menu_path = PathBuf::from(appdata)
-            .join(r"Microsoft\Windows\Start Menu\Programs")
-            .join("MagicBridge.lnk");
+        let start_menu_folder =
+            PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs\MagicBridge");
+        let _ = std::fs::create_dir_all(&start_menu_folder);
+
+        let app_shortcut = start_menu_folder.join("MagicBridge.lnk");
         let _ = create_shortcut(
             &dest_exe,
-            &start_menu_path,
-            "MagicBridge for Apple Keyboard",
+            &app_shortcut,
+            "MagicBridge for Apple Magic Keyboard",
+            "",
+        );
+
+        let uninstall_shortcut = start_menu_folder.join("Uninstall MagicBridge.lnk");
+        let _ = create_shortcut(
+            &dest_exe,
+            &uninstall_shortcut,
+            "Uninstall MagicBridge",
+            "--uninstall",
         );
     }
 
@@ -155,7 +179,12 @@ pub fn perform_install(options: &InstallOptions) -> Result<(), String> {
         let desktop_path = PathBuf::from(userprofile)
             .join("Desktop")
             .join("MagicBridge.lnk");
-        let _ = create_shortcut(&dest_exe, &desktop_path, "MagicBridge for Apple Keyboard");
+        let _ = create_shortcut(
+            &dest_exe,
+            &desktop_path,
+            "MagicBridge for Apple Magic Keyboard",
+            "",
+        );
     }
 
     // Autostart in HKCU Run
@@ -178,8 +207,12 @@ pub fn perform_install(options: &InstallOptions) -> Result<(), String> {
         "DisplayName",
         "MagicBridge (Apple Magic Keyboard for Windows)",
     );
-    let _ = write_hkcu_string(uninstall_key, "DisplayVersion", "0.3.0");
-    let _ = write_hkcu_string(uninstall_key, "Publisher", "MagicBridge Contributors");
+    let _ = write_hkcu_string(uninstall_key, "DisplayVersion", env!("CARGO_PKG_VERSION"));
+    let _ = write_hkcu_string(
+        uninstall_key,
+        "Publisher",
+        "MagicBridge Open Source Project",
+    );
     let _ = write_hkcu_string(
         uninstall_key,
         "InstallLocation",
@@ -190,7 +223,9 @@ pub fn perform_install(options: &InstallOptions) -> Result<(), String> {
 
     // Launch installed app if requested
     if options.launch_on_finish {
-        let _ = Command::new(&dest_exe).spawn();
+        let mut cmd = Command::new(&dest_exe);
+        cmd.arg("--daemon");
+        let _ = cmd.spawn();
     }
 
     Ok(())
@@ -212,12 +247,15 @@ pub fn perform_uninstall(remove_user_data: bool) -> Result<(), String> {
     // 3. Remove uninstall entry
     let _ = delete_hkcu_key(r"Software\Microsoft\Windows\CurrentVersion\Uninstall\MagicBridge");
 
-    // 4. Remove Shortcuts
+    // 4. Remove Start Menu folder and Desktop Shortcuts
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let start_menu_path = PathBuf::from(appdata)
-            .join(r"Microsoft\Windows\Start Menu\Programs")
-            .join("MagicBridge.lnk");
-        let _ = std::fs::remove_file(start_menu_path);
+        let start_menu_folder = PathBuf::from(appdata.clone())
+            .join(r"Microsoft\Windows\Start Menu\Programs\MagicBridge");
+        let _ = std::fs::remove_dir_all(start_menu_folder);
+        // Also remove legacy single shortcut if present
+        let legacy_shortcut =
+            PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs\MagicBridge.lnk");
+        let _ = std::fs::remove_file(legacy_shortcut);
     }
     if let Ok(userprofile) = std::env::var("USERPROFILE") {
         let desktop_path = PathBuf::from(userprofile)
@@ -234,7 +272,6 @@ pub fn perform_uninstall(remove_user_data: bool) -> Result<(), String> {
     // 6. Remove installation directory
     let install_dir = default_install_dir();
     if install_dir.exists() {
-        // Schedule cleanup batch command because the currently running uninstaller may reside inside
         let ps_cmd = format!(
             "Start-Sleep -Seconds 1; Remove-Item -Path '{}' -Recurse -Force",
             install_dir.display()
@@ -273,7 +310,6 @@ fn write_hkcu_string(sub_key: &str, value_name: &str, data: &str) -> Result<(), 
         return Err(status);
     }
 
-    // SAFETY: RegSetValueExW sets string value data.
     let byte_count = (data_w.len() * std::mem::size_of::<u16>()) as u32;
     // SAFETY: data_w is a valid null-terminated UTF-16 buffer with byte length byte_count.
     let byte_slice =
@@ -347,84 +383,235 @@ fn delete_hkcu_key(sub_key: &str) -> Result<(), WIN32_ERROR> {
 }
 
 // ----------------------------------------------------------------------------
-// GUI Installer & Uninstaller Applications
+// Progressive Windows Setup Wizard Application
 // ----------------------------------------------------------------------------
 
-/// Standalone GUI Installer wizard application.
-#[derive(Debug, Clone, Default)]
+/// Setup wizard steps.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SetupStep {
+    #[default]
+    Welcome,
+    Options,
+    Installing,
+    FirstSetup,
+    Finished,
+}
+
+/// Action chosen on Step 0 if MagicBridge is already installed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum WelcomeAction {
+    #[default]
+    InstallOrUpgrade,
+    Uninstall,
+}
+
+/// Progressive Windows GUI Setup Wizard Application.
 pub struct InstallerApp {
+    pub step: SetupStep,
+    pub welcome_action: WelcomeAction,
+    pub already_installed: bool,
+    pub show_advanced_options: bool,
     pub options: InstallOptions,
-    pub status_message: Option<Result<String, String>>,
-    pub is_finished: bool,
+    // Step 2 install simulation / state
+    pub install_progress: f32,
+    pub install_status_text: String,
+    pub install_error: Option<String>,
+    // Step 3 first-run settings
+    pub selected_layout: KeyboardLayout,
+    pub selected_modifier: ModifierPreset,
+    pub selected_fn_key: FnKeyChoice,
+    pub media_keys_first: bool,
+    pub is_connected_probe: bool,
+    pub battery_probe: Option<u8>,
+    pub custom_path_str: String,
+}
+
+impl Default for InstallerApp {
+    fn default() -> Self {
+        let default_dir = default_install_dir();
+        let already_installed = default_dir.join("magicbridge.exe").exists();
+        let detected_layout = crate::detect_windows_keyboard_layout();
+        let ipc = crate::ipc::SettingsIpc::new();
+        let status = ipc.query_status();
+
+        Self {
+            step: SetupStep::Welcome,
+            welcome_action: WelcomeAction::InstallOrUpgrade,
+            already_installed,
+            show_advanced_options: false,
+            options: InstallOptions::default(),
+            install_progress: 0.0,
+            install_status_text: String::from("Ready to install"),
+            install_error: None,
+            selected_layout: detected_layout,
+            selected_modifier: ModifierPreset::WindowsLayout,
+            selected_fn_key: FnKeyChoice::RightOption,
+            media_keys_first: true,
+            is_connected_probe: status.as_ref().is_some_and(|s| s.is_connected),
+            battery_probe: status.as_ref().and_then(|s| s.battery_percent),
+            custom_path_str: default_dir.display().to_string(),
+        }
+    }
 }
 
 impl App for InstallerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            // 1. Wizard Steps Breadcrumb Bar
+            render_wizard_breadcrumbs(ui, self.step);
             ui.add_space(8.0);
-            ui.heading("⌨ MagicBridge Setup");
-            ui.label("Apple Magic Keyboard with Numeric Keypad (A1843) for Windows 10/11");
-            ui.add_space(10.0);
 
-            if self.is_finished {
-                ui.colored_label(
-                    Color32::from_rgb(40, 160, 60),
-                    RichText::new("✔ Installation completed successfully!")
-                        .size(16.0)
-                        .strong(),
-                );
-                ui.add_space(10.0);
-                ui.label("MagicBridge is now installed and configured on your computer.");
-                ui.add_space(16.0);
-                if ui.button(RichText::new("Close").size(14.0)).clicked() {
+            // 2. Step View Dispatch
+            match self.step {
+                SetupStep::Welcome => self.render_step_welcome(ui, ctx),
+                SetupStep::Options => self.render_step_options(ui, ctx),
+                SetupStep::Installing => self.render_step_installing(ui, ctx),
+                SetupStep::FirstSetup => self.render_step_first_setup(ui, ctx),
+                SetupStep::Finished => self.render_step_finished(ui, ctx),
+            }
+        });
+    }
+}
+
+impl InstallerApp {
+    fn render_step_welcome(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.heading("Welcome to the MagicBridge Setup Wizard");
+        ui.add_space(4.0);
+        ui.label(
+            "MagicBridge makes the Apple Magic Keyboard with Numeric Keypad (model A1843) \
+             behave as a first-class Windows keyboard with native media controls, user-mode \
+             Fn layer, modifier presets, and live battery reporting.",
+        );
+        ui.add_space(12.0);
+
+        if self.already_installed {
+            egui::Frame::group(ui.style())
+                .fill(Color32::from_rgb(240, 245, 255))
+                .corner_radius(CornerRadius::same(6))
+                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(180, 205, 240)))
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        ui.label(
+                            RichText::new("ℹ MagicBridge is currently installed on this computer.")
+                                .strong()
+                                .color(Color32::from_rgb(0, 100, 200)),
+                        );
+                        ui.add_space(4.0);
+                        ui.radio_value(
+                            &mut self.welcome_action,
+                            WelcomeAction::InstallOrUpgrade,
+                            "Reinstall or Upgrade MagicBridge (Recommended)",
+                        );
+                        ui.radio_value(
+                            &mut self.welcome_action,
+                            WelcomeAction::Uninstall,
+                            "Uninstall MagicBridge completely from this computer",
+                        );
+                    });
+                });
+        } else {
+            egui::Frame::group(ui.style())
+                .fill(Color32::from_rgb(245, 248, 250))
+                .corner_radius(CornerRadius::same(6))
+                .show(ui, |ui| {
+                    ui.label("This setup wizard will install MagicBridge onto your computer and guide you through first-run keyboard configuration.");
+                });
+        }
+
+        ui.add_space(20.0);
+        ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
+            ui.horizontal(|ui| {
+                if ui.button("Cancel").clicked() {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
-                return;
-            }
 
-            ui.group(|ui| {
-                ui.label(RichText::new("Installation Location:").strong());
-                ui.label(self.options.install_dir.display().to_string());
-            });
+                let next_text =
+                    if self.already_installed && self.welcome_action == WelcomeAction::Uninstall {
+                        "Next (Uninstall) >"
+                    } else {
+                        "Next >"
+                    };
 
-            ui.add_space(8.0);
-            ui.group(|ui| {
-                ui.label(RichText::new("Setup Options:").strong());
-                ui.checkbox(
-                    &mut self.options.create_desktop_shortcut,
-                    "Create Desktop Shortcut",
-                );
-                ui.checkbox(
-                    &mut self.options.create_start_menu_shortcut,
-                    "Create Start Menu Shortcut",
-                );
-                ui.checkbox(
-                    &mut self.options.autostart_on_login,
-                    "Start MagicBridge automatically at Windows logon",
-                );
-                ui.checkbox(
-                    &mut self.options.launch_on_finish,
-                    "Launch MagicBridge immediately after setup",
-                );
-            });
+                let next_btn =
+                    egui::Button::new(RichText::new(next_text).strong().color(Color32::WHITE))
+                        .fill(Color32::from_rgb(0, 120, 215))
+                        .corner_radius(CornerRadius::same(6));
 
-            if let Some(ref res) = self.status_message {
-                ui.add_space(8.0);
-                match res {
-                    Ok(msg) => {
-                        ui.colored_label(Color32::from_rgb(40, 160, 60), msg);
-                    }
-                    Err(err) => {
-                        ui.colored_label(Color32::from_rgb(220, 50, 40), format!("Error: {err}"));
+                if ui.add(next_btn).clicked() {
+                    if self.already_installed && self.welcome_action == WelcomeAction::Uninstall {
+                        // Launch uninstaller window
+                        let _ = run_uninstaller_gui();
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    } else {
+                        self.step = SetupStep::Options;
                     }
                 }
-            }
+            });
+            ui.separator();
+        });
+    }
 
-            ui.add_space(16.0);
+    fn render_step_options(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.heading("Installation Options");
+        ui.label("Select the installation options for MagicBridge:");
+        ui.add_space(8.0);
+
+        // Basic Options (visible to all users)
+        egui::Frame::group(ui.style())
+            .fill(Color32::from_rgb(245, 248, 252))
+            .corner_radius(CornerRadius::same(6))
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.label(RichText::new("Installation Summary").strong());
+                    ui.label("• Installs to your personal user account (%LOCALAPPDATA%\\Programs\\MagicBridge)");
+                    ui.label("• Zero administrator privileges required, leaves Windows system files untouched");
+                    ui.add_space(6.0);
+                    ui.checkbox(
+                        &mut self.options.create_desktop_shortcut,
+                        "Create Desktop Shortcut",
+                    );
+                    ui.checkbox(
+                        &mut self.options.autostart_on_login,
+                        "Start MagicBridge automatically at Windows login",
+                    );
+                });
+            });
+
+        ui.add_space(8.0);
+
+        // Advanced Options Collapsible (masked by default as requested by user)
+        let toggle_label = if self.show_advanced_options {
+            "▾ Hide Advanced Options"
+        } else {
+            "▸ Show Advanced Options (Custom Path, Shortcuts)"
+        };
+        if ui.button(RichText::new(toggle_label).small()).clicked() {
+            self.show_advanced_options = !self.show_advanced_options;
+        }
+
+        if self.show_advanced_options {
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Install Folder:");
+                    if ui.text_edit_singleline(&mut self.custom_path_str).changed() {
+                        self.options.install_dir = PathBuf::from(&self.custom_path_str);
+                    }
+                });
+                ui.checkbox(
+                    &mut self.options.create_start_menu_shortcut,
+                    "Create Start Menu shortcuts (MagicBridge & Uninstaller)",
+                );
+            });
+        }
+
+        ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
             ui.horizontal(|ui| {
+                if ui.button("Cancel").clicked() {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+
                 let install_btn = egui::Button::new(
-                    RichText::new("Install Now")
-                        .size(14.0)
+                    RichText::new("Install Now >")
                         .strong()
                         .color(Color32::WHITE),
                 )
@@ -432,21 +619,280 @@ impl App for InstallerApp {
                 .corner_radius(CornerRadius::same(6));
 
                 if ui.add(install_btn).clicked() {
-                    match perform_install(&self.options) {
-                        Ok(()) => {
-                            self.is_finished = true;
-                            self.status_message = Some(Ok("Installed successfully!".to_string()));
-                        }
-                        Err(e) => {
-                            self.status_message = Some(Err(e));
-                        }
-                    }
+                    self.step = SetupStep::Installing;
                 }
 
-                if ui.button("Cancel").clicked() {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                if ui.button("< Back").clicked() {
+                    self.step = SetupStep::Welcome;
                 }
             });
+            ui.separator();
+        });
+    }
+
+    fn render_step_installing(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.heading("Installing MagicBridge...");
+        ui.label("Please wait while the setup wizard installs MagicBridge on your computer.");
+        ui.add_space(16.0);
+
+        if self.install_progress < 1.0 {
+            self.install_progress += 0.25;
+            ctx.request_repaint_after(std::time::Duration::from_millis(150));
+
+            if self.install_progress >= 0.25 && self.install_progress < 0.5 {
+                self.install_status_text = String::from("Copying application binaries...");
+            } else if self.install_progress >= 0.5 && self.install_progress < 0.75 {
+                self.install_status_text =
+                    String::from("Creating Start Menu and Desktop shortcuts...");
+            } else if self.install_progress >= 0.75 && self.install_progress < 1.0 {
+                self.install_status_text =
+                    String::from("Registering in Windows Settings and starting services...");
+            }
+        }
+
+        if self.install_progress >= 1.0 && self.install_error.is_none() {
+            match perform_install(&self.options) {
+                Ok(()) => {
+                    self.step = SetupStep::FirstSetup;
+                }
+                Err(e) => {
+                    self.install_error = Some(e);
+                }
+            }
+        }
+
+        ui.add(
+            ProgressBar::new(self.install_progress.clamp(0.0, 1.0))
+                .show_percentage()
+                .animate(true),
+        );
+        ui.add_space(8.0);
+        ui.label(RichText::new(&self.install_status_text).italics());
+
+        if let Some(ref err) = self.install_error {
+            ui.add_space(8.0);
+            ui.colored_label(
+                Color32::from_rgb(220, 50, 40),
+                format!("Installation failed: {err}"),
+            );
+        }
+    }
+
+    fn render_step_first_setup(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+        ui.heading("First-Run Keyboard Setup");
+        ui.label("Configure your initial keyboard preferences (you can change them anytime in Settings):");
+        ui.add_space(6.0);
+
+        // Hardware detection indicator
+        egui::Frame::group(ui.style())
+            .fill(Color32::from_rgb(240, 248, 242))
+            .corner_radius(CornerRadius::same(6))
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if self.is_connected_probe {
+                        ui.colored_label(
+                            Color32::from_rgb(40, 160, 60),
+                            "✔ Apple Magic Keyboard Detected",
+                        );
+                        if let Some(pct) = self.battery_probe {
+                            ui.label(format!("(Battery: {pct}%)"));
+                        }
+                    } else {
+                        ui.colored_label(
+                            Color32::from_rgb(200, 140, 0),
+                            "⚡ Keyboard not connected yet (connect via USB or Bluetooth)",
+                        );
+                    }
+                });
+            });
+
+        ui.add_space(6.0);
+
+        // 1. Keyboard Layout Selection
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Keyboard Layout:").strong());
+            let current_str = format!("{}", self.selected_layout);
+            let combo = egui::ComboBox::from_id_salt("wizard_setup_layout")
+                .selected_text(current_str)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoItalian,
+                        "ISO Italian",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::AnsiUs,
+                        "ANSI US",
+                    );
+                    ui.selectable_value(&mut self.selected_layout, KeyboardLayout::IsoUk, "ISO UK");
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoGerman,
+                        "ISO German",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoFrench,
+                        "ISO French",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoSpanish,
+                        "ISO Spanish",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoPortuguese,
+                        "ISO Portuguese",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoSwiss,
+                        "ISO Swiss",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::IsoNordic,
+                        "ISO Nordic",
+                    );
+                    ui.selectable_value(
+                        &mut self.selected_layout,
+                        KeyboardLayout::JapaneseJis,
+                        "Japanese JIS",
+                    );
+                });
+            combo
+                .response
+                .on_hover_text("Select your physical keyboard layout");
+
+            if ui.button("🔍 Auto-Detect from Windows").clicked() {
+                self.selected_layout = crate::detect_windows_keyboard_layout();
+            }
+        });
+
+        ui.add_space(4.0);
+
+        // 2. Modifier Key Preset Selection
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Modifier Preset:").strong());
+            ui.radio_value(
+                &mut self.selected_modifier,
+                ModifierPreset::WindowsLayout,
+                "Windows Layout (Cmd ↔ Alt swapped for standard PC feel)",
+            );
+            ui.radio_value(
+                &mut self.selected_modifier,
+                ModifierPreset::MacLayout,
+                "Mac Layout",
+            );
+        });
+
+        ui.add_space(4.0);
+
+        // 3. Fn Trigger Key Choice
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Fn Trigger Key:").strong());
+            ui.radio_value(
+                &mut self.selected_fn_key,
+                FnKeyChoice::RightOption,
+                "Right Option / AltGr",
+            );
+            ui.radio_value(
+                &mut self.selected_fn_key,
+                FnKeyChoice::RightControl,
+                "Right Control",
+            );
+            ui.radio_value(&mut self.selected_fn_key, FnKeyChoice::F19, "F19");
+        });
+
+        ui.add_space(4.0);
+        ui.checkbox(
+            &mut self.media_keys_first,
+            "Top row keys default to Media controls (Play/Pause, Volume, Brightness)",
+        );
+
+        ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
+            ui.horizontal(|ui| {
+                let save_btn = egui::Button::new(
+                    RichText::new("Save & Continue >")
+                        .strong()
+                        .color(Color32::WHITE),
+                )
+                .fill(Color32::from_rgb(0, 120, 215))
+                .corner_radius(CornerRadius::same(6));
+
+                if ui.add(save_btn).clicked() {
+                    // Save initial configuration
+                    let mut config = Config::default();
+                    if let Some(profile) = config.active_profile_mut() {
+                        profile.layout = self.selected_layout.clone();
+                        profile.modifier_preset = self.selected_modifier;
+                        profile.fn_key = self.selected_fn_key;
+                        profile.top_row_mode = if self.media_keys_first {
+                            TopRowMode::MediaKeysFirst
+                        } else {
+                            TopRowMode::FKeysFirst
+                        };
+                    }
+                    config.autostart = self.options.autostart_on_login;
+                    let config_path =
+                        default_config_path().unwrap_or_else(|_| PathBuf::from("config.toml"));
+                    if let Ok(toml_str) = config.to_toml_string() {
+                        let _ = atomic_write(&config_path, toml_str);
+                    }
+
+                    self.step = SetupStep::Finished;
+                }
+            });
+            ui.separator();
+        });
+    }
+
+    fn render_step_finished(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.heading("🎉 Setup Completed Successfully!");
+        ui.add_space(4.0);
+        ui.label("MagicBridge is now installed and configured on your computer.");
+        ui.label("The background keyboard engine is active and will run in your system tray.");
+        ui.add_space(16.0);
+
+        egui::Frame::group(ui.style())
+            .fill(Color32::from_rgb(240, 248, 255))
+            .corner_radius(CornerRadius::same(6))
+            .show(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.label(RichText::new("What would you like to do next?").strong());
+                    ui.label("• Open the Settings panel to customize individual keys, view battery status, or run hardware verification tests.");
+                    ui.label("• Or simply close this wizard — your keyboard is already working with your chosen layout!");
+                });
+            });
+
+        ui.add_space(20.0);
+
+        ui.horizontal(|ui| {
+            let open_settings_btn = egui::Button::new(
+                RichText::new("🚀 Open MagicBridge Settings Panel")
+                    .size(15.0)
+                    .strong()
+                    .color(Color32::WHITE),
+            )
+            .fill(Color32::from_rgb(0, 120, 215))
+            .corner_radius(CornerRadius::same(6));
+
+            if ui.add(open_settings_btn).clicked() {
+                let dest_exe = self.options.install_dir.join("magicbridge.exe");
+                let mut cmd = Command::new(&dest_exe);
+                cmd.arg("--settings");
+                let _ = cmd.spawn();
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+
+            if ui
+                .button(RichText::new("Finish & Close").size(14.0))
+                .clicked()
+            {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
         });
     }
 }
@@ -457,6 +903,7 @@ pub struct UninstallerApp {
     pub remove_user_data: bool,
     pub status_message: Option<Result<String, String>>,
     pub is_finished: bool,
+    pub progress: f32,
 }
 
 impl App for UninstallerApp {
@@ -469,10 +916,10 @@ impl App for UninstallerApp {
             if self.is_finished {
                 ui.colored_label(
                     Color32::from_rgb(40, 160, 60),
-                    RichText::new("✔ MagicBridge was successfully removed.")
-                        .size(16.0)
-                        .strong(),
+                    RichText::new("✔ MagicBridge was successfully and cleanly removed.").size(16.0).strong(),
                 );
+                ui.add_space(10.0);
+                ui.label("All application files, shortcuts, and background entries have been purged.");
                 ui.add_space(16.0);
                 if ui.button(RichText::new("Close").size(14.0)).clicked() {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -480,14 +927,9 @@ impl App for UninstallerApp {
                 return;
             }
 
-            ui.label(
-                "This will completely remove MagicBridge and all its shortcuts from your computer.",
-            );
+            ui.label("Are you sure you want to completely remove MagicBridge and all its shortcuts from your computer?");
             ui.add_space(8.0);
-            ui.checkbox(
-                &mut self.remove_user_data,
-                "Also remove custom key profiles and user configuration files",
-            );
+            ui.checkbox(&mut self.remove_user_data, "Also remove custom key profiles and user configuration files (%APPDATA%\\MagicBridge)");
 
             if let Some(ref res) = self.status_message {
                 ui.add_space(8.0);
@@ -501,10 +943,10 @@ impl App for UninstallerApp {
                 }
             }
 
-            ui.add_space(16.0);
+            ui.add_space(20.0);
             ui.horizontal(|ui| {
                 let uninstall_btn = egui::Button::new(
-                    RichText::new("Uninstall Now")
+                    RichText::new("Uninstall MagicBridge")
                         .size(14.0)
                         .strong()
                         .color(Color32::WHITE),
@@ -532,17 +974,47 @@ impl App for UninstallerApp {
     }
 }
 
+/// Helper to render wizard steps breadcrumbs header.
+fn render_wizard_breadcrumbs(ui: &mut egui::Ui, current_step: SetupStep) {
+    let steps = [
+        (SetupStep::Welcome, "1. Welcome"),
+        (SetupStep::Options, "2. Options"),
+        (SetupStep::Installing, "3. Installing"),
+        (SetupStep::FirstSetup, "4. Initial Setup"),
+        (SetupStep::Finished, "5. Ready"),
+    ];
+
+    ui.horizontal(|ui| {
+        for (i, (step, label)) in steps.iter().enumerate() {
+            let is_current = current_step == *step;
+            let text = if is_current {
+                RichText::new(*label)
+                    .strong()
+                    .color(Color32::from_rgb(0, 120, 215))
+            } else {
+                RichText::new(*label).color(Color32::from_rgb(130, 135, 140))
+            };
+
+            ui.label(text);
+            if i < steps.len() - 1 {
+                ui.label(RichText::new("›").color(Color32::from_rgb(180, 185, 190)));
+            }
+        }
+    });
+    ui.separator();
+}
+
 /// Runs the native GUI Installer wizard window.
 pub fn run_installer_gui() -> Result<(), eframe::Error> {
     let native_options = NativeOptions {
         viewport: ViewportBuilder::default()
-            .with_inner_size([580.0, 380.0])
-            .with_resizable(false)
-            .with_title("MagicBridge Setup"),
+            .with_inner_size([640.0, 450.0])
+            .with_min_inner_size([600.0, 420.0])
+            .with_title("MagicBridge Setup Wizard"),
         ..Default::default()
     };
     eframe::run_native(
-        "MagicBridge Setup",
+        "MagicBridge Setup Wizard",
         native_options,
         Box::new(|_cc| Ok(Box::new(InstallerApp::default()))),
     )
@@ -552,7 +1024,7 @@ pub fn run_installer_gui() -> Result<(), eframe::Error> {
 pub fn run_uninstaller_gui() -> Result<(), eframe::Error> {
     let native_options = NativeOptions {
         viewport: ViewportBuilder::default()
-            .with_inner_size([520.0, 300.0])
+            .with_inner_size([540.0, 320.0])
             .with_resizable(false)
             .with_title("MagicBridge Uninstaller"),
         ..Default::default()

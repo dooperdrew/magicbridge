@@ -121,7 +121,7 @@ if (-not (Test-Path $AbsoluteOutputDir)) {
     New-Item -ItemType Directory -Path $AbsoluteOutputDir -Force | Out-Null
 }
 
-$ArchiveBaseName = "MagicBridge-v$Version-windows-x64"
+$ArchiveBaseName = "MagicBridge-v$Version-portable"
 $StagingDir = Join-Path $AbsoluteOutputDir "staging\$ArchiveBaseName"
 
 if (Test-Path $StagingDir) {
@@ -129,14 +129,15 @@ if (Test-Path $StagingDir) {
 }
 New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
 
-# Copy unified binary as both magicbridge.exe and MagicBridge-Setup.exe
-Copy-Item -Path $UnifiedExe -Destination (Join-Path $StagingDir "magicbridge.exe") -Force
-Copy-Item -Path $UnifiedExe -Destination (Join-Path $StagingDir "MagicBridge-Setup.exe") -Force
-Copy-Item -Path $UnifiedExe -Destination (Join-Path $AbsoluteOutputDir "MagicBridge-v$Version-Setup.exe") -Force
+# Copy standalone setup executable directly to output directory (SINGLE EXECUTABLE INSTALLER)
+$SetupExeName = "MagicBridge-Setup.exe"
+$VersionedSetupExeName = "MagicBridge-v$Version-Setup.exe"
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $AbsoluteOutputDir $SetupExeName) -Force
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $AbsoluteOutputDir $VersionedSetupExeName) -Force
+Write-Host "  - Created standalone single installer: $SetupExeName and $VersionedSetupExeName" -ForegroundColor Green
 
-if (Test-Path $AgentExe) {
-    Copy-Item -Path $AgentExe -Destination (Join-Path $StagingDir "magicbridge-agent.exe") -Force
-}
+# Stage ONLY the unified binary for portable archive (single executable in zip, no secondary exes)
+Copy-Item -Path $UnifiedExe -Destination (Join-Path $StagingDir "magicbridge.exe") -Force
 
 # Copy locales
 $StagingLocales = Join-Path $StagingDir "locales"
@@ -149,29 +150,6 @@ Copy-Item -Path $ReadmeSrc -Destination $StagingDir -Force
 Copy-Item -Path $LicenseSrc -Destination $StagingDir -Force
 if (Test-Path $UserGuideSrc) {
     Copy-Item -Path $UserGuideSrc -Destination $StagingDir -Force
-}
-
-# Copy installer and setup scripts
-$SetupWizardScript = Join-Path $RepoRoot "scripts\setup-wizard.ps1"
-$SetupCmd = Join-Path $RepoRoot "scripts\setup.cmd"
-$InstallScript = Join-Path $RepoRoot "scripts\install.ps1"
-$UninstallScript = Join-Path $RepoRoot "scripts\uninstall.ps1"
-$InstallerIss = Join-Path $RepoRoot "scripts\installer.iss"
-
-if (Test-Path $SetupWizardScript) {
-    Copy-Item -Path $SetupWizardScript -Destination $StagingDir -Force
-}
-if (Test-Path $SetupCmd) {
-    Copy-Item -Path $SetupCmd -Destination $StagingDir -Force
-}
-if (Test-Path $InstallScript) {
-    Copy-Item -Path $InstallScript -Destination $StagingDir -Force
-}
-if (Test-Path $UninstallScript) {
-    Copy-Item -Path $UninstallScript -Destination $StagingDir -Force
-}
-if (Test-Path $InstallerIss) {
-    Copy-Item -Path $InstallerIss -Destination $StagingDir -Force
 }
 
 Write-Host "Staging folder populated at: $StagingDir" -ForegroundColor Green

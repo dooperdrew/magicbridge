@@ -232,6 +232,52 @@ pub fn show(
             ui.add_space(4.0);
             ui.colored_label(egui::Color32::from_rgb(40, 160, 60), msg);
         }
+
+        ui.separator();
+
+        // 7. Installation & Maintenance
+        ui.heading(i18n.t("general.maintenance_title"));
+        ui.add_space(4.0);
+
+        let is_installed = crate::is_installed_location();
+        if is_installed {
+            ui.horizontal(|ui| {
+                ui.colored_label(egui::Color32::from_rgb(40, 160, 60), "✔");
+                ui.label(i18n.t("general.installed_desc"));
+            });
+            ui.add_space(4.0);
+            let uninstall_btn = egui::Button::new(
+                egui::RichText::new(i18n.t("general.uninstall_button"))
+                    .color(egui::Color32::from_rgb(220, 50, 40))
+                    .strong(),
+            );
+            if ui.add(uninstall_btn).clicked()
+                && let Ok(current_exe) = std::env::current_exe()
+            {
+                let _ = std::process::Command::new(current_exe)
+                    .arg("--uninstall")
+                    .spawn();
+            }
+        } else {
+            ui.horizontal(|ui| {
+                ui.colored_label(egui::Color32::from_rgb(0, 120, 215), "ℹ");
+                ui.label(i18n.t("general.portable_desc"));
+            });
+            ui.add_space(4.0);
+            let install_btn = egui::Button::new(
+                egui::RichText::new(i18n.t("general.install_button"))
+                    .color(egui::Color32::WHITE)
+                    .strong(),
+            )
+            .fill(egui::Color32::from_rgb(0, 120, 215));
+            if ui.add(install_btn).clicked()
+                && let Ok(current_exe) = std::env::current_exe()
+            {
+                let _ = std::process::Command::new(current_exe)
+                    .arg("--install")
+                    .spawn();
+            }
+        }
     });
 
     modified

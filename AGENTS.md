@@ -121,6 +121,10 @@ Before writing or modifying any code, the agent MUST read:
   - When writing files from PowerShell, always force UTF-8 without BOM (`[System.IO.File]::WriteAllText(..., [System.Text.UTF8Encoding]::new($false))` or `Set-Content -Encoding utf8`) and set `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` before capturing external CLI stdout (`gh`, `git`). Prefer dedicated file-writing tools over shell redirection.
   - Use `;` instead of `&&` for command chaining in PowerShell 5.
   - Scope file searches strictly to the project workspace; never run unconstrained recursive searches over `.cargo`, `target`, or dependency caches.
+- **Single-Binary Distribution & Setup Ergonomics:**
+  - Release bundles must NEVER contain multiple confusing executables. Distribute a single standalone installer (`MagicBridge-Setup.exe`) and a clean portable archive containing only `magicbridge.exe` and resources.
+  - The setup wizard MUST implement a progressive 5-step flow with breadcrumbs and animated progress bar, masking non-basic options behind an advanced toggle, and registering full uninstallation across Windows Settings, Start Menu, and Settings GUI.
+  - Launching `magicbridge.exe` directly MUST ALWAYS open the Settings Panel directly without hijacking or blocking normal application access.
 
 ### D. Verification Gate (MUST PASS Locally)
 Before finishing any turn or committing, the Lead Agent MUST run and verify clean output:

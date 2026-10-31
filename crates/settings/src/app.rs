@@ -68,7 +68,6 @@ impl MagicBridgeApp {
     #[must_use]
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let config_path = default_config_path().unwrap_or_else(|_| PathBuf::from("config.toml"));
-        let config_existed = config_path.exists();
         let config = Config::load_from_path(&config_path).unwrap_or_default();
         let i18n = I18n::new(&config.ui_language);
         let ipc = SettingsIpc::new();
@@ -77,14 +76,8 @@ impl MagicBridgeApp {
         let wizard_state = OnboardingWizardState::new_from_config(&config);
         let qa_state = HardwareQaViewState::default();
 
-        let initial_tab = if config_existed {
-            SettingsTab::Keyboard
-        } else {
-            SettingsTab::Wizard
-        };
-
         Self {
-            current_tab: initial_tab,
+            current_tab: SettingsTab::Keyboard,
             config,
             config_path,
             i18n,

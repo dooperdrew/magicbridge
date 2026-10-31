@@ -9,9 +9,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use eframe::{NativeOptions, egui::ViewportBuilder};
-use magicbridge_settings::{
-    MagicBridgeApp, is_installed_location, run_installer_gui, run_uninstaller_gui,
-};
+use magicbridge_settings::{MagicBridgeApp, run_installer_gui, run_uninstaller_gui};
 
 fn main() -> Result<(), eframe::Error> {
     let args: Vec<String> = std::env::args().collect();
@@ -28,17 +26,17 @@ fn main() -> Result<(), eframe::Error> {
     }
 
     // 3. Installer mode check:
-    let is_installed = is_installed_location();
+    // Run the progressive Windows Setup Wizard if explicitly requested via `--install`,
+    // or if the executable filename itself indicates setup/installer (e.g. MagicBridge-Setup.exe).
     let is_explicit_settings = args.iter().any(|a| a == "--settings");
     let is_explicit_install = args.iter().any(|a| a == "--install");
-    let is_dev_or_test = std::env::current_exe()
-        .map(|p| {
-            let s = p.to_string_lossy().to_lowercase();
-            s.contains(r"\target\") || s.contains("ui-qa")
-        })
-        .unwrap_or(false);
+    let exe_name = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
+        .unwrap_or_default();
+    let is_setup_exe = exe_name.contains("setup") || exe_name.contains("installer");
 
-    if is_explicit_install || (!is_installed && !is_explicit_settings && !is_dev_or_test) {
+    if is_explicit_install || (is_setup_exe && !is_explicit_settings) {
         return run_installer_gui();
     }
 
