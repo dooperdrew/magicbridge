@@ -13,6 +13,7 @@ use magicbridge_core::{Config, atomic_write, default_config_path};
 
 use crate::i18n::I18n;
 use crate::ipc::SettingsIpc;
+use crate::keyboard_model::A1843Model;
 use crate::views::architecture_view::ArchitectureViewState;
 use crate::views::general_view::GeneralViewState;
 use crate::views::keyboard_view::{self, ConfigChange, KeyboardViewState};
@@ -74,7 +75,14 @@ impl MagicBridgeApp {
         let daemon_status = ipc.query_status();
         let general_state = GeneralViewState::new_from_config(&config);
         let wizard_state = OnboardingWizardState::new_from_config(&config);
-        let qa_state = HardwareQaViewState::default();
+        let keyboard_state = KeyboardViewState {
+            model: A1843Model::for_model(config.keyboard_model),
+            ..Default::default()
+        };
+        let qa_state = HardwareQaViewState {
+            model: A1843Model::for_model(config.keyboard_model),
+            ..Default::default()
+        };
 
         Self {
             current_tab: SettingsTab::Keyboard,
@@ -85,7 +93,7 @@ impl MagicBridgeApp {
             daemon_status,
             last_poll: Instant::now(),
             banner_message: None,
-            keyboard_state: KeyboardViewState::default(),
+            keyboard_state,
             top_row_state: TopRowViewState::default(),
             general_state,
             architecture_state: ArchitectureViewState::default(),
@@ -116,6 +124,12 @@ impl MagicBridgeApp {
 
 impl App for MagicBridgeApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        // Sync visual keyboard model with configuration model
+        if self.keyboard_state.model.model_id != self.config.keyboard_model {
+            self.keyboard_state.model = A1843Model::for_model(self.config.keyboard_model);
+            self.qa_state.model = A1843Model::for_model(self.config.keyboard_model);
+        }
+
         // Apply visual theme from configuration
         match self.config.theme {
             magicbridge_core::ThemeMode::Dark => ctx.set_visuals(egui::Visuals::dark()),
@@ -281,17 +295,25 @@ impl App for MagicBridgeApp {
                             .is_some_and(|s| s.is_connected || s.agent_running);
                         let pill_text = if is_connected {
                             if battery_pct > 0 {
-                                format!("🔋 {}%", battery_pct)
+                                format!(
+                                    "🔋 {}% ({})",
+                                    battery_pct,
+                                    self.config.keyboard_model.short_name()
+                                )
                             } else {
-                                "⚡ A1843 Connected".to_string()
+                                format!("⚡ {} Connected", self.config.keyboard_model.short_name())
                             }
                         } else {
                             "⚪ Disconnected".to_string()
                         };
                         let is_on_battery_tab = self.current_tab == SettingsTab::Battery;
+                        let tooltip = format!(
+                            "{} • Click to view Battery & Power",
+                            self.config.keyboard_model.display_name()
+                        );
                         let pill_btn = ui
                             .add_enabled(!is_on_battery_tab, egui::Button::new(&pill_text))
-                            .on_hover_text("View Battery & Device Health");
+                            .on_hover_text(tooltip);
                         crate::set_accessible_name(ui, pill_btn.id, &pill_text);
                         if pill_btn.clicked() {
                             self.current_tab = SettingsTab::Battery;

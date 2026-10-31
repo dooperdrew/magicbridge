@@ -13,7 +13,9 @@
 use eframe::egui::{self, Color32, CornerRadius, ProgressBar, RichText, ScrollArea, Stroke, Ui};
 use magicbridge_agent::DaemonStatus;
 use magicbridge_agent::autostart;
-use magicbridge_core::{Config, FnKeyChoice, KeyboardLayout, ModifierPreset, TopRowMode};
+use magicbridge_core::{
+    AppleModelId, Config, FnKeyChoice, KeyboardLayout, ModifierPreset, TopRowMode,
+};
 
 use crate::i18n::I18n;
 use crate::ipc::SettingsIpc;
@@ -39,6 +41,8 @@ pub enum WizardAction {
 pub struct OnboardingWizardState {
     /// Current step index (0 to 5).
     pub current_step: usize,
+    /// Selected Apple Keyboard model.
+    pub selected_model: AppleModelId,
     /// Selected keyboard physical and language layout.
     pub selected_layout: KeyboardLayout,
     /// Selected modifier preset.
@@ -59,6 +63,7 @@ impl Default for OnboardingWizardState {
     fn default() -> Self {
         Self {
             current_step: 0,
+            selected_model: AppleModelId::default(),
             selected_layout: KeyboardLayout::IsoItalian,
             selected_modifier: ModifierPreset::WindowsLayout,
             selected_fn_key: FnKeyChoice::RightOption,
@@ -94,9 +99,11 @@ impl OnboardingWizardState {
             .map(|p| p.top_row_mode == TopRowMode::MediaKeysFirst)
             .unwrap_or(true);
         let autostart = config.autostart;
+        let selected_model = config.keyboard_model;
 
         Self {
             current_step: 0,
+            selected_model,
             selected_layout,
             selected_modifier,
             selected_fn_key,
@@ -130,6 +137,7 @@ impl OnboardingWizardState {
 
     /// Applies the wizard choices to the given configuration and registers autostart if enabled.
     pub fn apply_to_config(&mut self, config: &mut Config) {
+        config.keyboard_model = self.selected_model;
         if let Some(profile) = config.active_profile_mut() {
             profile.layout = self.selected_layout.clone();
             profile.modifier_preset = self.selected_modifier;
@@ -340,6 +348,33 @@ fn render_step_0_welcome(
                         let _ = SettingsIpc::launch_agent();
                     }
                 }
+            }
+        });
+
+        ui.add_space(8.0);
+
+        // Apple Keyboard Model Selection
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(format!("{}:", i18n.t("general.keyboard_model"))).strong());
+            let combo = egui::ComboBox::from_id_salt("wizard_step0_model")
+                .selected_text(state.selected_model.display_name())
+                .show_ui(ui, |ui| {
+                    for m in AppleModelId::all() {
+                        ui.selectable_value(&mut state.selected_model, *m, m.display_name());
+                    }
+                });
+            let res = combo
+                .response
+                .on_hover_text(i18n.t("general.keyboard_model_tooltip"));
+            crate::set_accessible_name(ui, res.id, i18n.t("general.keyboard_model"));
+
+            if ui
+                .button(format!("🔍 {}", i18n.t("general.auto_detect_model")))
+                .on_hover_text(i18n.t("general.auto_detect_model_tooltip"))
+                .clicked()
+                && let Some(detected) = magicbridge_agent::detect_connected_apple_model()
+            {
+                state.selected_model = detected;
             }
         });
 
@@ -1140,6 +1175,7 @@ mod tests {
         let mut config = Config::default();
         let mut state = OnboardingWizardState::new();
 
+        state.selected_model = AppleModelId::A1644;
         state.selected_layout = KeyboardLayout::IsoGerman;
         state.selected_modifier = ModifierPreset::MacLayout;
         state.selected_fn_key = FnKeyChoice::Other(VK_CAPITAL_CODE);
@@ -1149,6 +1185,7 @@ mod tests {
         state.apply_to_config(&mut config);
 
         assert!(state.is_completed);
+        assert_eq!(config.keyboard_model, AppleModelId::A1644);
         let profile = config.active_profile().expect("active profile exists");
         assert_eq!(profile.layout, KeyboardLayout::IsoGerman);
         assert_eq!(profile.modifier_preset, ModifierPreset::MacLayout);

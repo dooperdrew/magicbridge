@@ -251,6 +251,20 @@ pub fn probe_connected_apple_keyboards() -> Vec<(String, String)> {
     results
 }
 
+/// Probes currently present HID devices to detect the Apple keyboard model ID.
+///
+/// Returns `Some(AppleModelId)` for the first detected Apple keyboard, or `None` if no Apple keyboard is present.
+#[must_use]
+pub fn detect_connected_apple_model() -> Option<magicbridge_core::AppleModelId> {
+    for (path, _) in probe_connected_apple_keyboards() {
+        let info = parse_hid_path(&path);
+        if let Some(pid) = info.pid {
+            return Some(magicbridge_core::AppleModelId::from_pid(pid));
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

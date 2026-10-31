@@ -11,8 +11,9 @@ pub mod engine;
 pub mod key;
 
 pub use config::{
-    Config, ConfigError, CustomAction, FnKeyChoice, KeyAction, KeyboardLayout, ModifierPreset,
-    NamedProfile, ThemeMode, TopRowMode, atomic_write, default_config_dir, default_config_path,
+    AppleModelId, Config, ConfigError, CustomAction, FnKeyChoice, KeyAction, KeyboardLayout,
+    KeyboardModelType, ModifierPreset, NamedProfile, ThemeMode, TopRowMode, atomic_write,
+    default_config_dir, default_config_path,
 };
 pub use engine::{CompiledMappingTable, RemapAction, compile_profile};
 pub use key::{
@@ -39,6 +40,30 @@ pub const APPLE_BT_VID: u16 = 0x004C;
 
 /// Apple Magic Keyboard with Numeric Keypad (A1843) product ID.
 pub const A1843_PID: u16 = 0x026C;
+
+/// Apple Magic Keyboard Compact (A1644) product ID.
+pub const A1644_PID: u16 = 0x0267;
+
+/// Apple Magic Keyboard with Touch ID Compact (A2449) product ID.
+pub const A2449_PID: u16 = 0x029A;
+
+/// Apple Magic Keyboard with Lock Key Compact (A2450) product ID.
+pub const A2450_PID: u16 = 0x029B;
+
+/// Apple Magic Keyboard with Touch ID & Numeric Keypad (A2520) product ID.
+pub const A2520_PID: u16 = 0x029C;
+
+/// Apple Magic Keyboard Compact USB-C (A3122) product ID.
+pub const A3122_PID: u16 = 0x02C0;
+
+/// Apple Magic Keyboard with Touch ID & Numeric Keypad USB-C (A3123) product ID.
+pub const A3123_PID: u16 = 0x02C1;
+
+/// Apple Wireless Keyboard Compact (A1314) product ID (Bluetooth).
+pub const A1314_PID: u16 = 0x0255;
+
+/// Apple Keyboard with Numeric Keypad Wired (A1243) product ID (USB).
+pub const A1243_PID: u16 = 0x0220;
 
 /// Returns `true` if the given vendor ID belongs to Apple (USB `0x05AC` or Bluetooth `0x004C`).
 #[must_use]

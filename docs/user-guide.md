@@ -1,34 +1,37 @@
 # MagicBridge User Guide ⌨️ 🌉
 
-**Comprehensive User Manual & Technical Guide for the Apple Magic Keyboard with Numeric Keypad (A1843) on Windows 10 & 11**
+**Comprehensive User Manual & Technical Guide for the Apple Magic Keyboard Family (Full-Size & Compact) on Windows 10 & 11**
 
 ---
 
 ## Table of Contents
 1. [Introduction & Overview](#1-introduction--overview)
-2. [Quick Start & Installation](#2-quick-start--installation)
-3. [Connecting the Keyboard (USB & Bluetooth)](#3-connecting-the-keyboard-usb--bluetooth)
-4. [System Tray Controls](#4-system-tray-controls)
-5. [The Fn Layer & Keyboard Combos](#5-the-fn-layer--keyboard-combos)
-6. [Top Row & Media Keys](#6-top-row--media-keys)
-7. [Modifier Layout Presets](#7-modifier-layout-presets)
-8. [Missing Windows Keys & Special Functions](#8-missing-windows-keys--special-functions)
-9. [Profiles & Multi-Language Layouts](#9-profiles--multi-language-layouts)
-10. [Battery Monitoring & Toast Alerts](#10-battery-monitoring--toast-alerts)
-11. [Gaming & Anti-Cheat Compatibility](#11-gaming--anti-cheat-compatibility)
-12. [Known Limitations & Workarounds](#12-known-limitations--workarounds)
-13. [Uninstallation](#13-uninstallation)
+2. [Supported Apple Keyboard Models](#2-supported-apple-keyboard-models)
+3. [Quick Start & Installation](#3-quick-start--installation)
+4. [Connecting the Keyboard (USB & Bluetooth)](#4-connecting-the-keyboard-usb--bluetooth)
+5. [System Tray Controls](#5-system-tray-controls)
+6. [The Fn Layer & Keyboard Combos](#6-the-fn-layer--keyboard-combos)
+7. [Top Row & Media Keys](#7-top-row--media-keys)
+8. [Modifier Layout Presets](#8-modifier-layout-presets)
+9. [Missing Windows Keys & Special Functions](#9-missing-windows-keys--special-functions)
+10. [Profiles & Multi-Language Layouts](#10-profiles--multi-language-layouts)
+11. [Battery Monitoring & Toast Alerts](#11-battery-monitoring--toast-alerts)
+12. [Gaming & Anti-Cheat Compatibility](#12-gaming--anti-cheat-compatibility)
+13. [Known Limitations & Workarounds](#13-known-limitations--workarounds)
+14. [Uninstallation](#14-uninstallation)
 
 ---
 
 ## 1. Introduction & Overview
 
-**MagicBridge** is a native, ultra-lightweight Windows 10 and 11 utility tailored specifically for the **Apple Magic Keyboard with Numeric Keypad (Model A1843)**.
+**MagicBridge** is a native, ultra-lightweight Windows 10 and 11 utility tailored specifically for the entire family of **Apple Keyboards**:
+- **Full-Size with Numeric Keypad:** Magic Keyboard with Numeric Keypad (A1843, A2520, A3123) and Apple Keyboard with Numpad Wired (A1243).
+- **Compact (Tenkeyless):** Magic Keyboard Compact (A1644, A2449, A2450, A3122) and Apple Wireless Keyboard (A1314).
 
 When connected to Windows, Apple keyboards normally suffer from several frustrating limitations:
 - The physical `Fn` key is locked and ignored by the Windows kernel.
 - The `Cmd` and `Option` modifier positions clash with standard Windows PC keyboards (`Ctrl - Win - Alt`).
-- Missing critical keys: no `Print Screen`, `Scroll Lock`, `Pause`, or dedicated `Insert`.
+- Missing critical keys: no `Print Screen`, `Scroll Lock`, `Pause`, or dedicated `Insert`/Forward `Delete` (especially on compact models).
 - The top-row function and media keys do not toggle naturally.
 - Windows does not display battery percentage for Apple Bluetooth keyboards.
 
@@ -40,7 +43,36 @@ MagicBridge fixes all of these issues while maintaining uncompromising system in
 
 ---
 
-## 2. Quick Start & Installation
+## 2. Supported Apple Keyboard Models
+
+MagicBridge supports all modern and legacy Apple desktop keyboards:
+
+| Model ID | Hardware Name | Form Factor | Connectivity | Battery Gauge |
+|---|---|---|---|---|
+| **A1843** | Magic Keyboard with Numeric Keypad | Full-Size (109 keys) | Lightning USB / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A1644** | Magic Keyboard Compact | Compact (78/79 keys) | Lightning USB / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A2449** | Magic Keyboard with Touch ID Compact | Compact (78/79 keys) | Lightning USB / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A2450** | Magic Keyboard with Lock Key Compact | Compact (78/79 keys) | Lightning USB / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A2520** | Magic Keyboard with Touch ID & Numpad | Full-Size (109 keys) | Lightning USB / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A3122** | Magic Keyboard Compact USB-C | Compact (78/79 keys) | USB-C / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A3123** | Magic Keyboard with Touch ID & Numpad USB-C | Full-Size (109 keys) | USB-C / Bluetooth Classic | Report 0x90 (0–100%) |
+| **A1314** | Apple Wireless Keyboard | Compact (78/79 keys) | Bluetooth Classic (2x AA) | Bluetooth PnP Battery |
+| **A1243** | Apple Keyboard with Numeric Keypad | Full-Size (109 keys) | Wired USB Cable | Bus-Powered (Wired) |
+
+### Auto-Detection & Switching
+- In **General Settings** or the **Setup Wizard**, click `[Auto-Detect Model]` to identify your model via its USB/Bluetooth Product ID.
+- The visual layout in the Settings GUI dynamically switches between Full-Size (with numpad) and Compact (with compact arrow cluster).
+- **Compact Navigation Combos:** On compact models lacking dedicated navigation blocks, MagicBridge provides built-in Fn layer navigation:
+  - `Fn + Backspace` &rarr; Forward Delete (`Delete`)
+  - `Fn + Left / Right` &rarr; `Home` / `End`
+  - `Fn + Up / Down` &rarr; `Page Up` / `Page Down`
+  - `Fn + P` &rarr; `Print Screen`
+  - `Fn + S` &rarr; `Scroll Lock`
+  - `Fn + B` &rarr; `Pause / Break`
+
+---
+
+## 3. Quick Start & Installation
 
 ### System Requirements
 - **Operating System:** Windows 10 (version 1903 or later) or Windows 11 (64-bit x64).

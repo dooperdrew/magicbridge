@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use egui::Ui;
 use magicbridge_agent::autostart;
-use magicbridge_core::{Config, NamedProfile, ThemeMode};
+use magicbridge_core::{AppleModelId, Config, NamedProfile, ThemeMode};
 
 use crate::i18n::I18n;
 use crate::ipc::SettingsIpc;
@@ -109,9 +109,38 @@ pub fn show(
             }
         });
 
+        // 3. Apple Keyboard Model Selector & Auto-Detection
+        ui.horizontal(|ui| {
+            ui.label(i18n.t("general.keyboard_model"));
+            let combo = egui::ComboBox::from_id_salt("ui_keyboard_model_combo")
+                .selected_text(config.keyboard_model.display_name())
+                .show_ui(ui, |ui| {
+                    for m in AppleModelId::all() {
+                        ui.selectable_value(&mut config.keyboard_model, *m, m.display_name());
+                    }
+                });
+            let res = combo
+                .response
+                .on_hover_text(i18n.t("general.keyboard_model_tooltip"));
+            crate::set_accessible_name(ui, res.id, i18n.t("general.keyboard_model"));
+            if res.changed() {
+                modified = true;
+            }
+
+            if ui
+                .button(format!("🔍 {}", i18n.t("general.auto_detect_model")))
+                .on_hover_text(i18n.t("general.auto_detect_model_tooltip"))
+                .clicked()
+                && let Some(detected) = magicbridge_agent::detect_connected_apple_model()
+            {
+                config.keyboard_model = detected;
+                modified = true;
+            }
+        });
+
         ui.separator();
 
-        // 3. Autostart with Windows (F8.1)
+        // 4. Autostart with Windows (F8.1)
         let autostart_active = autostart::is_autostart_enabled().unwrap_or(false);
         let mut autostart_toggle = autostart_active;
         if ui

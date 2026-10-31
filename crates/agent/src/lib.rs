@@ -22,6 +22,7 @@ pub use action_worker::{ActionWorkerHandle, dispatch_action, start_action_worker
 pub use battery::{
     BatteryStatus, query_battery, read_battery_from_hid_path, read_bluetooth_pnp_battery,
 };
+pub use device_notify::{detect_connected_apple_model, probe_connected_apple_keyboards};
 pub use game_mode::{
     GameModeTracker, WM_GAME_MODE_EVENT, is_foreground_game, is_fullscreen_rect,
     is_ignored_shell_class, matches_process_list,

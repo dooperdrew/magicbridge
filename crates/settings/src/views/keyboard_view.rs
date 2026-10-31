@@ -444,7 +444,22 @@ pub enum ConfigChange {
 /// Follows Issue #14 responsive layout: `(available_width / 24.5).clamp(20.0, 42.0)`.
 #[must_use]
 pub fn calculate_unit_size(available_width: f32) -> f32 {
-    (available_width / 24.5).clamp(20.0, 42.0)
+    calculate_unit_size_for_model(
+        available_width,
+        magicbridge_core::KeyboardModelType::FullSize,
+    )
+}
+
+/// Dynamically calculates key unit width in pixels based on available container width and keyboard form factor.
+#[must_use]
+pub fn calculate_unit_size_for_model(
+    available_width: f32,
+    form_factor: magicbridge_core::KeyboardModelType,
+) -> f32 {
+    match form_factor {
+        magicbridge_core::KeyboardModelType::FullSize => (available_width / 24.5).clamp(20.0, 42.0),
+        magicbridge_core::KeyboardModelType::Compact => (available_width / 16.0).clamp(24.0, 50.0),
+    }
 }
 
 /// Dynamically calculates key font size in points based on unit size, key width, cluster, and label length.
@@ -493,9 +508,9 @@ fn render_visual_keyboard(
 
     // Dynamically calculate unit_size based on available width (Issue #14) or explicit scale
     let available_width = ui.available_width();
-    let base_unit = calculate_unit_size(available_width);
+    let base_unit = calculate_unit_size_for_model(available_width, state.model.form_factor());
     let unit_size = if state.canvas_scale > 0.0 {
-        (base_unit * state.canvas_scale).clamp(18.0, 48.0)
+        (base_unit * state.canvas_scale).clamp(18.0, 52.0)
     } else {
         base_unit
     };
@@ -504,7 +519,11 @@ fn render_visual_keyboard(
     let key_height = (unit_size * 0.95).round();
     let key_spacing = (unit_size * 0.055).clamp(1.0, 2.5);
 
-    let keyboard_total_width = (23.0 * (unit_size + key_spacing)) + unit_size;
+    let max_units_x = match state.model.form_factor() {
+        magicbridge_core::KeyboardModelType::FullSize => 23.0,
+        magicbridge_core::KeyboardModelType::Compact => 14.5,
+    };
+    let keyboard_total_width = (max_units_x * (unit_size + key_spacing)) + unit_size;
     let total_height = (6.0 * (key_height + key_spacing)) + 8.0;
 
     // Center keyboard horizontally if available width exceeds total keyboard width
@@ -540,7 +559,8 @@ fn render_visual_keyboard(
     // Draw each physical key
     for key in &state.model.keys {
         let key_x = rect.left() + margin_x + (key.x * (unit_size + key_spacing));
-        let key_y = rect.top() + margin_y + (key.row as f32 * (key_height + key_spacing));
+        let key_y =
+            rect.top() + margin_y + ((key.row as f32 + key.y_offset) * (key_height + key_spacing));
         let key_w = (key.width * unit_size) + ((key.width - 1.0) * key_spacing);
         let key_h = (key.height * key_height) + ((key.height - 1.0) * key_spacing);
 

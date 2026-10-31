@@ -3,8 +3,8 @@
 //! Provides coordinate geometry, key clusters (Main typing block, Navigation cluster,
 //! Numeric keypad cluster), and localized key legends across ANSI and ISO layouts (F7.2, F7.4).
 
-use magicbridge_core::KeyboardLayout;
 use magicbridge_core::key::*;
+use magicbridge_core::{AppleModelId, KeyboardLayout, KeyboardModelType};
 
 /// Cluster on the keyboard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,11 +36,14 @@ pub struct PhysicalKey {
     pub height: f32,
     /// Key cluster.
     pub cluster: KeyCluster,
+    /// Vertical offset in unit keys (default 0.0; used for half-height arrow keys).
+    pub y_offset: f32,
 }
 
-/// Represents the visual A1843 keyboard geometry.
+/// Represents the visual Apple keyboard geometry (FullSize or Compact).
 #[derive(Debug, Clone)]
 pub struct A1843Model {
+    pub model_id: AppleModelId,
     pub keys: Vec<PhysicalKey>,
 }
 
@@ -51,9 +54,30 @@ impl Default for A1843Model {
 }
 
 impl A1843Model {
-    /// Constructs the complete A1843 physical key collection.
+    /// Constructs the default physical key collection (Full Size A1843).
     #[must_use]
     pub fn new() -> Self {
+        Self::for_model(AppleModelId::A1843)
+    }
+
+    /// Constructs the appropriate model for an Apple keyboard variant.
+    #[must_use]
+    pub fn for_model(model_id: AppleModelId) -> Self {
+        match model_id.form_factor() {
+            KeyboardModelType::FullSize => Self::new_full_size(model_id),
+            KeyboardModelType::Compact => Self::new_compact(model_id),
+        }
+    }
+
+    /// Returns the form factor (FullSize or Compact) of this keyboard geometry.
+    #[must_use]
+    pub fn form_factor(&self) -> KeyboardModelType {
+        self.model_id.form_factor()
+    }
+
+    /// Constructs the complete full-size 109-key physical key collection.
+    #[must_use]
+    pub fn new_full_size(model_id: AppleModelId) -> Self {
         let mut keys = Vec::with_capacity(110);
 
         // ====================================================================
@@ -69,6 +93,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F1",
@@ -79,6 +104,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F2",
@@ -89,6 +115,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F3",
@@ -99,6 +126,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F4",
@@ -109,6 +137,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F5",
@@ -119,6 +148,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F6",
@@ -129,6 +159,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F7",
@@ -139,6 +170,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F8",
@@ -149,6 +181,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F9",
@@ -159,6 +192,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F10",
@@ -169,6 +203,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F11",
@@ -179,6 +214,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F12",
@@ -189,6 +225,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Navigation top row: F13..F15 (Offset x: 15.5)
@@ -202,6 +239,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F14",
@@ -212,6 +250,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F15",
@@ -222,6 +261,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
 
         // Numpad top row: F16..F19 (Offset x: 19.0)
@@ -235,6 +275,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F17",
@@ -245,6 +286,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F18",
@@ -255,6 +297,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "F19",
@@ -265,6 +308,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
         // ====================================================================
@@ -279,6 +323,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         let digits = [
             ("1", VK_1),
@@ -302,6 +347,7 @@ impl A1843Model {
                 width: 1.0,
                 height: 1.0,
                 cluster: KeyCluster::Main,
+                y_offset: 0.0,
             });
         }
         keys.push(PhysicalKey {
@@ -313,6 +359,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Equals",
@@ -323,6 +370,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Backspace",
@@ -333,6 +381,7 @@ impl A1843Model {
             width: 2.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Nav row 1: Fn key (Mac physical label; stripped by kbdhid.sys in kernel mode)
@@ -345,6 +394,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Home",
@@ -355,6 +405,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "PageUp",
@@ -365,6 +416,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
 
         // Numpad row 1: Clear, =, /, *
@@ -377,6 +429,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumEquals",
@@ -387,6 +440,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumDivide",
@@ -397,6 +451,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumMultiply",
@@ -407,6 +462,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
         // ====================================================================
@@ -421,6 +477,7 @@ impl A1843Model {
             width: 1.5,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         let row2_letters = [
             ("Q", VK_Q),
@@ -444,6 +501,7 @@ impl A1843Model {
                 width: 1.0,
                 height: 1.0,
                 cluster: KeyCluster::Main,
+                y_offset: 0.0,
             });
         }
         keys.push(PhysicalKey {
@@ -455,6 +513,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "RBracket",
@@ -465,6 +524,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Backslash",
@@ -475,6 +535,7 @@ impl A1843Model {
             width: 1.5,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Nav row 2: Forward Delete, End, Page Down
@@ -487,6 +548,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "End",
@@ -497,6 +559,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "PageDown",
@@ -507,6 +570,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
 
         // Numpad row 2: 7, 8, 9, -
@@ -519,6 +583,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num8",
@@ -529,6 +594,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num9",
@@ -539,6 +605,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumSubtract",
@@ -549,6 +616,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
         // ====================================================================
@@ -563,6 +631,7 @@ impl A1843Model {
             width: 1.75,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         let row3_letters = [
             ("A", VK_A),
@@ -585,6 +654,7 @@ impl A1843Model {
                 width: 1.0,
                 height: 1.0,
                 cluster: KeyCluster::Main,
+                y_offset: 0.0,
             });
         }
         keys.push(PhysicalKey {
@@ -596,6 +666,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Quote",
@@ -606,6 +677,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Enter",
@@ -616,6 +688,7 @@ impl A1843Model {
             width: 2.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Numpad row 3: 4, 5, 6, +
@@ -628,6 +701,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num5",
@@ -638,6 +712,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num6",
@@ -648,6 +723,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumAdd",
@@ -658,6 +734,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
         // ====================================================================
@@ -672,6 +749,7 @@ impl A1843Model {
             width: 1.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "IsoLessGreater",
@@ -682,6 +760,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         let row4_letters = [
             ("Z", VK_Z),
@@ -702,6 +781,7 @@ impl A1843Model {
                 width: 1.0,
                 height: 1.0,
                 cluster: KeyCluster::Main,
+                y_offset: 0.0,
             });
         }
         keys.push(PhysicalKey {
@@ -713,6 +793,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Period",
@@ -723,6 +804,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Slash",
@@ -733,6 +815,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "RightShift",
@@ -743,6 +826,7 @@ impl A1843Model {
             width: 2.75,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Nav row 4: Up Arrow (centered at col 1)
@@ -755,6 +839,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
 
         // Numpad row 4: 1, 2, 3, Enter
@@ -767,6 +852,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num2",
@@ -777,6 +863,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Num3",
@@ -787,6 +874,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumEnter",
@@ -797,6 +885,7 @@ impl A1843Model {
             width: 1.0,
             height: 2.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
         // ====================================================================
@@ -811,6 +900,7 @@ impl A1843Model {
             width: 1.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "LeftOption",
@@ -821,6 +911,7 @@ impl A1843Model {
             width: 1.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "LeftCommand",
@@ -831,6 +922,7 @@ impl A1843Model {
             width: 1.5,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Space",
@@ -841,6 +933,7 @@ impl A1843Model {
             width: 6.0,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "RightCommand",
@@ -851,6 +944,7 @@ impl A1843Model {
             width: 1.5,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "RightOption",
@@ -861,6 +955,7 @@ impl A1843Model {
             width: 1.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "RightControl",
@@ -871,6 +966,7 @@ impl A1843Model {
             width: 1.25,
             height: 1.0,
             cluster: KeyCluster::Main,
+            y_offset: 0.0,
         });
 
         // Nav row 5: Left, Down, Right arrows
@@ -883,6 +979,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Down",
@@ -893,6 +990,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "Right",
@@ -903,6 +1001,7 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
         });
 
         // Numpad row 5: 0 (2u wide), . (decimal)
@@ -915,6 +1014,7 @@ impl A1843Model {
             width: 2.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
         keys.push(PhysicalKey {
             id: "NumDecimal",
@@ -925,9 +1025,426 @@ impl A1843Model {
             width: 1.0,
             height: 1.0,
             cluster: KeyCluster::Numpad,
+            y_offset: 0.0,
         });
 
-        Self { keys }
+        Self { model_id, keys }
+    }
+
+    /// Constructs the compact 78/79-key physical key collection for compact Apple keyboards
+    /// (e.g. A1644, A2449, A2450, A3122, A1314).
+    #[must_use]
+    pub fn new_compact(model_id: AppleModelId) -> Self {
+        let mut keys = Vec::with_capacity(80);
+
+        // ====================================================================
+        // ROW 0: Top Function Row (Esc, F1..F12, Eject/Lock/TouchID) - 14 keys
+        // Total width = 14.5u (Esc: 1.0, F1..F12: 12.0, TopRight: 1.5)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "Escape",
+            default_label: "esc",
+            vk: VK_ESCAPE,
+            row: 0,
+            x: 0.0,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        let f_keys: [(&'static str, &'static str, u16); 12] = [
+            ("F1", "F1", VK_F1),
+            ("F2", "F2", VK_F2),
+            ("F3", "F3", VK_F3),
+            ("F4", "F4", VK_F4),
+            ("F5", "F5", VK_F5),
+            ("F6", "F6", VK_F6),
+            ("F7", "F7", VK_F7),
+            ("F8", "F8", VK_F8),
+            ("F9", "F9", VK_F9),
+            ("F10", "F10", VK_F10),
+            ("F11", "F11", VK_F11),
+            ("F12", "F12", VK_F12),
+        ];
+        for (i, (id, label, vk)) in f_keys.iter().enumerate() {
+            keys.push(PhysicalKey {
+                id,
+                default_label: label,
+                vk: *vk,
+                row: 0,
+                x: (i + 1) as f32,
+                width: 1.0,
+                height: 1.0,
+                cluster: KeyCluster::Main,
+                y_offset: 0.0,
+            });
+        }
+
+        // Top right key (Lock / Touch ID / Eject)
+        let (corner_id, corner_label, corner_vk) = match model_id {
+            AppleModelId::A1314 => ("Eject", "⏏", VK_MEDIA_STOP),
+            AppleModelId::A2449 | AppleModelId::A3122 => ("TouchId", "touch id", VK_SNAPSHOT),
+            AppleModelId::A2450 | AppleModelId::A1644 => ("Lock", "⌽", VK_SNAPSHOT),
+            _ => ("EjectOrLock", "⏏ / lock", VK_SNAPSHOT),
+        };
+        keys.push(PhysicalKey {
+            id: corner_id,
+            default_label: corner_label,
+            vk: corner_vk,
+            row: 0,
+            x: 13.0,
+            width: 1.5,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // ====================================================================
+        // ROW 1: Number Row (`~`, 1..0, -, =, Backspace) - 14 keys (width: 14.5u)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "Grave",
+            default_label: "` ~",
+            vk: 0xC0, // VK_OEM_3
+            row: 1,
+            x: 0.0,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        let digits: [(&'static str, &'static str, u16); 12] = [
+            ("1", "1", 0x31),
+            ("2", "2", 0x32),
+            ("3", "3", 0x33),
+            ("4", "4", 0x34),
+            ("5", "5", 0x35),
+            ("6", "6", 0x36),
+            ("7", "7", 0x37),
+            ("8", "8", 0x38),
+            ("9", "9", 0x39),
+            ("0", "0", 0x30),
+            ("Minus", "- _", 0xBD),
+            ("Equals", "= +", 0xBB),
+        ];
+        for (i, (id, label, vk)) in digits.iter().enumerate() {
+            keys.push(PhysicalKey {
+                id,
+                default_label: label,
+                vk: *vk,
+                row: 1,
+                x: (i + 1) as f32,
+                width: 1.0,
+                height: 1.0,
+                cluster: KeyCluster::Main,
+                y_offset: 0.0,
+            });
+        }
+
+        keys.push(PhysicalKey {
+            id: "Backspace",
+            default_label: "delete ⌫",
+            vk: VK_BACK,
+            row: 1,
+            x: 13.0,
+            width: 1.5,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // ====================================================================
+        // ROW 2: QWERTY Row (Tab, Q..P, [, ], \) - 14 keys (width: 14.5u)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "Tab",
+            default_label: "tab ⇥",
+            vk: VK_TAB,
+            row: 2,
+            x: 0.0,
+            width: 1.5,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        let row2_keys: [(&'static str, &'static str, u16); 12] = [
+            ("Q", "Q", VK_Q),
+            ("W", "W", VK_W),
+            ("E", "E", VK_E),
+            ("R", "R", VK_R),
+            ("T", "T", VK_T),
+            ("Y", "Y", VK_Y),
+            ("U", "U", VK_U),
+            ("I", "I", VK_I),
+            ("O", "O", VK_O),
+            ("P", "P", VK_P),
+            ("LeftBracket", "[ {", 0xDB),
+            ("RightBracket", "] }", 0xDD),
+        ];
+        for (i, (id, label, vk)) in row2_keys.iter().enumerate() {
+            keys.push(PhysicalKey {
+                id,
+                default_label: label,
+                vk: *vk,
+                row: 2,
+                x: 1.5 + (i as f32),
+                width: 1.0,
+                height: 1.0,
+                cluster: KeyCluster::Main,
+                y_offset: 0.0,
+            });
+        }
+
+        keys.push(PhysicalKey {
+            id: "Backslash",
+            default_label: "\\ |",
+            vk: 0xDC,
+            row: 2,
+            x: 13.5,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // ====================================================================
+        // ROW 3: Home Row (CapsLock, A..L, ;, ', Return) - 13 keys (width: 14.5u)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "CapsLock",
+            default_label: "caps ⇪",
+            vk: VK_CAPITAL,
+            row: 3,
+            x: 0.0,
+            width: 1.75,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        let row3_keys: [(&'static str, &'static str, u16); 11] = [
+            ("A", "A", VK_A),
+            ("S", "S", VK_S),
+            ("D", "D", VK_D),
+            ("F", "F", VK_F),
+            ("G", "G", VK_G),
+            ("H", "H", VK_H),
+            ("J", "J", VK_J),
+            ("K", "K", VK_K),
+            ("L", "L", VK_L),
+            ("Semicolon", "; :", 0xBA),
+            ("Quote", "' \"", 0xDE),
+        ];
+        for (i, (id, label, vk)) in row3_keys.iter().enumerate() {
+            keys.push(PhysicalKey {
+                id,
+                default_label: label,
+                vk: *vk,
+                row: 3,
+                x: 1.75 + (i as f32),
+                width: 1.0,
+                height: 1.0,
+                cluster: KeyCluster::Main,
+                y_offset: 0.0,
+            });
+        }
+
+        keys.push(PhysicalKey {
+            id: "Return",
+            default_label: "return ↩",
+            vk: VK_RETURN,
+            row: 3,
+            x: 12.75,
+            width: 1.75,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // ====================================================================
+        // ROW 4: Shift Row (LeftShift, Z..M, ,, ., /, RightShift) - 12 keys (width: 14.5u)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "LeftShift",
+            default_label: "shift ⇧",
+            vk: VK_LSHIFT,
+            row: 4,
+            x: 0.0,
+            width: 2.25,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        let row4_keys: [(&'static str, &'static str, u16); 10] = [
+            ("Z", "Z", VK_Z),
+            ("X", "X", VK_X),
+            ("C", "C", VK_C),
+            ("V", "V", VK_V),
+            ("B", "B", VK_B),
+            ("N", "N", VK_N),
+            ("M", "M", VK_M),
+            ("Comma", ", <", 0xBC),
+            ("Period", ". >", 0xBE),
+            ("Slash", "/ ?", 0xBF),
+        ];
+        for (i, (id, label, vk)) in row4_keys.iter().enumerate() {
+            keys.push(PhysicalKey {
+                id,
+                default_label: label,
+                vk: *vk,
+                row: 4,
+                x: 2.25 + (i as f32),
+                width: 1.0,
+                height: 1.0,
+                cluster: KeyCluster::Main,
+                y_offset: 0.0,
+            });
+        }
+
+        keys.push(PhysicalKey {
+            id: "RightShift",
+            default_label: "shift ⇧",
+            vk: VK_RSHIFT,
+            row: 4,
+            x: 12.25,
+            width: 2.25,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // ====================================================================
+        // ROW 5: Bottom Modifier & Compact Arrow Row (width: 14.5u)
+        // ====================================================================
+        keys.push(PhysicalKey {
+            id: "Fn",
+            default_label: "fn",
+            vk: VK_RMENU,
+            row: 5,
+            x: 0.0,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "LeftControl",
+            default_label: "control ⌃",
+            vk: VK_LCONTROL,
+            row: 5,
+            x: 1.0,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "LeftOption",
+            default_label: "option ⌥",
+            vk: VK_LMENU,
+            row: 5,
+            x: 2.0,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "LeftCommand",
+            default_label: "command ⌘",
+            vk: VK_LWIN,
+            row: 5,
+            x: 3.0,
+            width: 1.25,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "Space",
+            default_label: "space",
+            vk: VK_SPACE,
+            row: 5,
+            x: 4.25,
+            width: 5.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "RightCommand",
+            default_label: "command ⌘",
+            vk: VK_RWIN,
+            row: 5,
+            x: 9.25,
+            width: 1.25,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "RightOption",
+            default_label: "option ⌥",
+            vk: VK_RMENU,
+            row: 5,
+            x: 10.5,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Main,
+            y_offset: 0.0,
+        });
+
+        // Compact Inverted-T Arrow Cluster
+        keys.push(PhysicalKey {
+            id: "Left",
+            default_label: "←",
+            vk: VK_LEFT,
+            row: 5,
+            x: 11.5,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "Up",
+            default_label: "↑",
+            vk: VK_UP,
+            row: 5,
+            x: 12.5,
+            width: 1.0,
+            height: 0.5,
+            cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
+        });
+        keys.push(PhysicalKey {
+            id: "Down",
+            default_label: "↓",
+            vk: VK_DOWN,
+            row: 5,
+            x: 12.5,
+            width: 1.0,
+            height: 0.5,
+            cluster: KeyCluster::Navigation,
+            y_offset: 0.5,
+        });
+        keys.push(PhysicalKey {
+            id: "Right",
+            default_label: "→",
+            vk: VK_RIGHT,
+            row: 5,
+            x: 13.5,
+            width: 1.0,
+            height: 1.0,
+            cluster: KeyCluster::Navigation,
+            y_offset: 0.0,
+        });
+
+        Self { model_id, keys }
     }
 
     /// Finds a physical key by its unique ID string.
@@ -1263,5 +1780,48 @@ mod tests {
 
         let key = model.find_by_vk(VK_RMENU).expect("RightOption found by VK");
         assert_eq!(key.id, "RightOption");
+    }
+
+    #[test]
+    fn test_compact_model_key_count_and_geometry() {
+        let compact = A1843Model::for_model(AppleModelId::A1644);
+        assert_eq!(compact.form_factor(), KeyboardModelType::Compact);
+        assert_eq!(
+            compact.keys.len(),
+            78,
+            "Expected 78 keys on compact ANSI layout"
+        );
+
+        // Verify zero keys in Numpad cluster
+        let numpad_keys: Vec<_> = compact
+            .keys
+            .iter()
+            .filter(|k| k.cluster == KeyCluster::Numpad)
+            .collect();
+        assert!(
+            numpad_keys.is_empty(),
+            "Compact model must have no numpad keys"
+        );
+
+        // Verify compact arrow cluster
+        let up = compact.find_by_id("Up").expect("Up arrow exists");
+        assert_eq!(up.height, 0.5);
+        assert_eq!(up.y_offset, 0.0);
+
+        let down = compact.find_by_id("Down").expect("Down arrow exists");
+        assert_eq!(down.height, 0.5);
+        assert_eq!(down.y_offset, 0.5);
+
+        let left = compact.find_by_id("Left").expect("Left arrow exists");
+        assert_eq!(left.height, 1.0);
+
+        let right = compact.find_by_id("Right").expect("Right arrow exists");
+        assert_eq!(right.height, 1.0);
+
+        // Verify Lock key on A1644 vs Touch ID on A2449
+        assert!(compact.find_by_id("Lock").is_some());
+
+        let touch_id_model = A1843Model::for_model(AppleModelId::A2449);
+        assert!(touch_id_model.find_by_id("TouchId").is_some());
     }
 }

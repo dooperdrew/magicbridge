@@ -1,12 +1,12 @@
 ﻿{
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Native, ultra-lightweight Windows utility making Apple Magic Keyboards behave as first-class Windows keyboards.",
     "homepage": "https://github.com/DooperDrew/magicbridge",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/DooperDrew/magicbridge/releases/download/v0.3.0/MagicBridge-v0.3.0-windows-x64.zip",
-            "hash": "CB98020084A6DF92B2BA57D2854EF6053666B7F5B90E48A0575C3B32025DD590"
+            "url": "https://github.com/DooperDrew/magicbridge/releases/download/v0.4.0/MagicBridge-v0.4.0-windows-x64.zip",
+            "hash": "3710A913CCF37A3F73C77442260530EF19C0032BBDF8968140408FCD220B529F"
         }
     },
     "bin": [

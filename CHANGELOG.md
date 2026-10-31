@@ -4,6 +4,43 @@ All development steps, hardware discoveries, architectural decisions, and commit
 
 ---
 
+## 2026-10-31 — MagicBridge v0.4.0: Universal Apple Keyboard Family Support (Full-Size & Compact)
+
+### Objective & Architecture
+- Extended first-class Windows integration across all desktop generations of Apple Keyboards:
+  - **Full-Size with Numeric Keypad (109 Keys):** Magic Keyboard with Numeric Keypad (`A1843`, `A2520`, `A3123`) & Apple Keyboard Wired (`A1243`).
+  - **Compact Tenkeyless (78/79 Keys):** Magic Keyboard Compact (`A1644`, `A2449`, `A2450`, `A3122`) & Apple Wireless Keyboard (`A1314`).
+- Implemented core hardware model classification (`AppleModelId` & `KeyboardModelType`), USB/Bluetooth Product ID (PID) lookup table, and automatic hardware detection (`detect_connected_apple_model()`).
+- Designed a dedicated 78/79-key visual geometry model (`A1843Model::new_compact`) in `crates/settings/src/keyboard_model.rs` featuring sub-millimeter row alignment (exact 14.5u width per row), compact inverted-T arrow cluster with vertical offsets (`y_offset`), model-specific corner keys (Lock / Touch ID / Eject), and responsive unit scaling.
+- Integrated Apple Keyboard Model selection with one-click hardware auto-detection into General Settings, Setup Wizard Step 0, and Native Progressive Setup Wizard Step 3.
+- Established the Community Hardware QA Framework with Section 6 in `docs/06-qa-and-validation.md` (`QA-MODEL-01`..`06`) and `.github/ISSUE_TEMPLATE/hardware_qa_report.md` for empirical hardware verification.
+
+### Key Deliverables & Enhancements
+1. **Core Hardware Classification & PID Detection Table (`crates/core`):**
+   - Added `AppleModelId` (`A1843`, `A1644`, `A2449`, `A2450`, `A2520`, `A3122`, `A3123`, `A1314`, `A1243`, `GenericApple`) and `KeyboardModelType` (`FullSize`, `Compact`) enums.
+   - Mapped USB/Bluetooth Product IDs: `0x026C` (A1843), `0x0267` (A1644), `0x029A` (A2449), `0x029B` (A2450), `0x029C` (A2520), `0x02C0` (A3122), `0x02C1` (A3123), `0x0255` (A1314), `0x0220` (A1243).
+   - Added `detect_connected_apple_model()` in `crates/agent` parsing connected HID paths to automatically detect plugged Apple hardware.
+   - Added `keyboard_model` configuration property with default `AppleModelId::A1843` and backward-compatible serde serialization.
+2. **Compact Visual Keyboard Geometry & Inverted-T Arrows (`crates/settings/src/keyboard_model.rs`):**
+   - Added `pub y_offset: f32` to `PhysicalKey` to support half-height key positioning (Up arrow at row 5, y_offset 0.0, height 0.5; Down arrow at row 5, y_offset 0.5, height 0.5).
+   - Implemented `A1843Model::new_compact` producing an exact 78-key (ANSI) / 79-key (ISO) layout with zero dead numpad space.
+   - Added `calculate_unit_size_for_model` auto-scaling compact keyboards up to 50px key width to fill the screen comfortably.
+   - Re-clicking or selecting any key works identically across both compact and full-size models.
+3. **UI/UX Model Selector & Auto-Detection Integration:**
+   - Added Apple Keyboard Model combobox and `[Auto-Detect Model]` button to General Settings (`general_view.rs`).
+   - Integrated model selection and auto-detection into Onboarding Setup Wizard Step 0 and Native Progressive Setup Wizard Step 3.
+   - Dynamic top-rail device status pill (`⚡ {ShortName} Connected`) with full model name in tooltip, eliminating visual tab overlap.
+4. **Autonomous UI QA Hardening (0 Findings):**
+   - Fixed `VIS-OVERLAP-000-06-07`: switched status pill to use concise model short names (`A1843`, `A1644`, `A2449`, `A1314`), leaving ample breathing room and eliminating overlap with navigation tabs.
+   - Fixed `A11Y-NAME-007-28`: assigned explicit AccessKit accessible name to the Setup Wizard Model combobox.
+   - Fixed `UX-DEAD-BTN-032`: forced immediate UI repaint (`request_repaint()`) on tray badge toggle to eliminate frame lag.
+5. **Community Hardware QA Framework (`docs/06-qa-and-validation.md`, `.github`):**
+   - Added Section 6 *Multi-Model Apple Keyboard Hardware Matrix* with structured test procedures for models A1644, A2449, A2450, A2520, A1314, and A1243.
+   - Updated GitHub Issue template for community hardware probe submissions.
+   - All 141 workspace unit tests pass.
+
+---
+
 ## 2026-10-31 — Extensive Autonomous UI/UX Test, Visual Ergonomics Hardening & Theme Selection (39 Steps, 0 Defects)
 
 ### Objective & Architecture

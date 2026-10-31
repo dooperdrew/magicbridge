@@ -379,12 +379,184 @@ impl fmt::Display for ThemeMode {
     }
 }
 
+/// Form factor classification for Apple Keyboards.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum KeyboardModelType {
+    /// Full-size keyboard with numeric keypad (~109 keys).
+    #[default]
+    FullSize,
+    /// Compact tenkeyless keyboard without numeric keypad (~78-79 keys).
+    Compact,
+}
+
+impl fmt::Display for KeyboardModelType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FullSize => write!(f, "Full Size with Numeric Keypad"),
+            Self::Compact => write!(f, "Compact (Tenkeyless)"),
+        }
+    }
+}
+
+/// Supported Apple Keyboard hardware models and variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+pub enum AppleModelId {
+    /// Apple Magic Keyboard with Numeric Keypad (Model A1843)
+    #[default]
+    #[serde(alias = "a1843", alias = "A1843", alias = "magic_keyboard_numpad")]
+    A1843,
+    /// Apple Magic Keyboard Compact (Model A1644)
+    #[serde(alias = "a1644", alias = "A1644", alias = "magic_keyboard_compact")]
+    A1644,
+    /// Apple Magic Keyboard with Touch ID Compact (Model A2449)
+    #[serde(
+        alias = "a2449",
+        alias = "A2449",
+        alias = "magic_keyboard_touchid_compact"
+    )]
+    A2449,
+    /// Apple Magic Keyboard with Lock Key Compact (Model A2450)
+    #[serde(
+        alias = "a2450",
+        alias = "A2450",
+        alias = "magic_keyboard_lock_compact"
+    )]
+    A2450,
+    /// Apple Magic Keyboard with Touch ID & Numeric Keypad (Model A2520)
+    #[serde(
+        alias = "a2520",
+        alias = "A2520",
+        alias = "magic_keyboard_touchid_numpad"
+    )]
+    A2520,
+    /// Apple Magic Keyboard Compact USB-C (Model A3122)
+    #[serde(alias = "a3122", alias = "A3122")]
+    A3122,
+    /// Apple Magic Keyboard with Touch ID & Numeric Keypad USB-C (Model A3123)
+    #[serde(alias = "a3123", alias = "A3123")]
+    A3123,
+    /// Apple Wireless Keyboard Compact (Model A1314)
+    #[serde(alias = "a1314", alias = "A1314", alias = "wireless_keyboard_compact")]
+    A1314,
+    /// Apple Keyboard with Numeric Keypad Wired (Model A1243)
+    #[serde(
+        alias = "a1243",
+        alias = "A1243",
+        alias = "apple_keyboard_wired_numpad"
+    )]
+    A1243,
+    /// Generic / Other Apple Keyboard
+    #[serde(alias = "generic", alias = "other", alias = "generic_apple")]
+    GenericApple,
+}
+
+impl AppleModelId {
+    /// Returns the physical form factor for this keyboard model.
+    #[must_use]
+    pub const fn form_factor(&self) -> KeyboardModelType {
+        match self {
+            Self::A1843 | Self::A2520 | Self::A3123 | Self::A1243 => KeyboardModelType::FullSize,
+            Self::A1644
+            | Self::A2449
+            | Self::A2450
+            | Self::A3122
+            | Self::A1314
+            | Self::GenericApple => KeyboardModelType::Compact,
+        }
+    }
+
+    /// Returns human-readable display name for this model.
+    #[must_use]
+    pub const fn display_name(&self) -> &'static str {
+        match self {
+            Self::A1843 => "Magic Keyboard with Numeric Keypad (A1843)",
+            Self::A1644 => "Magic Keyboard Compact (A1644)",
+            Self::A2449 => "Magic Keyboard with Touch ID Compact (A2449)",
+            Self::A2450 => "Magic Keyboard with Lock Key Compact (A2450)",
+            Self::A2520 => "Magic Keyboard with Touch ID & Numpad (A2520)",
+            Self::A3122 => "Magic Keyboard Compact USB-C (A3122)",
+            Self::A3123 => "Magic Keyboard with Touch ID & Numpad USB-C (A3123)",
+            Self::A1314 => "Wireless Keyboard Compact (A1314)",
+            Self::A1243 => "Apple Keyboard with Numpad Wired (A1243)",
+            Self::GenericApple => "Generic Apple Keyboard",
+        }
+    }
+
+    /// Returns short concise model code (e.g. "A1843", "A1644").
+    #[must_use]
+    pub const fn short_name(&self) -> &'static str {
+        match self {
+            Self::A1843 => "A1843",
+            Self::A1644 => "A1644",
+            Self::A2449 => "A2449",
+            Self::A2450 => "A2450",
+            Self::A2520 => "A2520",
+            Self::A3122 => "A3122",
+            Self::A3123 => "A3123",
+            Self::A1314 => "A1314",
+            Self::A1243 => "A1243",
+            Self::GenericApple => "Apple KB",
+        }
+    }
+
+    /// Identifies the Apple Keyboard model from a USB/BT Product ID.
+    #[must_use]
+    pub const fn from_pid(pid: u16) -> Self {
+        match pid {
+            0x026C => Self::A1843,
+            0x0267 => Self::A1644,
+            0x029A | 0x029F => Self::A2449,
+            0x029B => Self::A2450,
+            0x029C => Self::A2520,
+            0x02C0 => Self::A3122,
+            0x02C1 => Self::A3123,
+            0x0255 | 0x0256 => Self::A1314,
+            0x0230 => Self::A1314, // A1255 similar to A1314
+            0x0220 | 0x0221 => Self::A1243,
+            0x020B | 0x020C => Self::A1243, // A1048 full-size
+            _ => Self::A1843,
+        }
+    }
+
+    /// Returns true if this model has a battery (rechargeable or replaceable).
+    #[must_use]
+    pub const fn has_battery(&self) -> bool {
+        !matches!(self, Self::A1243)
+    }
+
+    /// Returns all supported Apple keyboard models in display order.
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::A1843,
+            Self::A1644,
+            Self::A2449,
+            Self::A2450,
+            Self::A2520,
+            Self::A3122,
+            Self::A3123,
+            Self::A1314,
+            Self::A1243,
+            Self::GenericApple,
+        ]
+    }
+}
+
+impl fmt::Display for AppleModelId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.display_name())
+    }
+}
+
 /// Global MagicBridge configuration root (F7.4, F7.6, F7.7).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
     /// Name of the currently active profile.
     #[serde(default = "default_active_profile")]
     pub active_profile: String,
+    /// Apple keyboard hardware model.
+    #[serde(default)]
+    pub keyboard_model: AppleModelId,
     /// Visual theme mode: System, Dark, or Light.
     #[serde(default)]
     pub theme: ThemeMode,
@@ -449,6 +621,7 @@ impl Default for Config {
 
         Self {
             active_profile: active_name,
+            keyboard_model: AppleModelId::default(),
             theme: ThemeMode::default(),
             autostart: false,
             battery_poll_minutes: default_battery_poll_minutes(),
@@ -1123,5 +1296,56 @@ mod tests {
         assert!(loaded.game_mode_enabled);
         assert_eq!(loaded.game_mode_processes.len(), 3);
         assert!(loaded.is_game_process("cs2"));
+    }
+
+    #[test]
+    fn test_apple_model_id_and_form_factor() {
+        assert_eq!(
+            AppleModelId::A1843.form_factor(),
+            KeyboardModelType::FullSize
+        );
+        assert_eq!(
+            AppleModelId::A1644.form_factor(),
+            KeyboardModelType::Compact
+        );
+        assert_eq!(
+            AppleModelId::A2449.form_factor(),
+            KeyboardModelType::Compact
+        );
+        assert_eq!(
+            AppleModelId::A2520.form_factor(),
+            KeyboardModelType::FullSize
+        );
+        assert_eq!(
+            AppleModelId::A1314.form_factor(),
+            KeyboardModelType::Compact
+        );
+        assert_eq!(
+            AppleModelId::A1243.form_factor(),
+            KeyboardModelType::FullSize
+        );
+
+        // PID identification
+        assert_eq!(AppleModelId::from_pid(0x026C), AppleModelId::A1843);
+        assert_eq!(AppleModelId::from_pid(0x0267), AppleModelId::A1644);
+        assert_eq!(AppleModelId::from_pid(0x029A), AppleModelId::A2449);
+        assert_eq!(AppleModelId::from_pid(0x029C), AppleModelId::A2520);
+        assert_eq!(AppleModelId::from_pid(0x0255), AppleModelId::A1314);
+        assert_eq!(AppleModelId::from_pid(0x0220), AppleModelId::A1243);
+
+        // Battery presence
+        assert!(AppleModelId::A1843.has_battery());
+        assert!(AppleModelId::A1644.has_battery());
+        assert!(!AppleModelId::A1243.has_battery());
+
+        // Serialization
+        let mut config = Config::default();
+        assert_eq!(config.keyboard_model, AppleModelId::A1843);
+        config.keyboard_model = AppleModelId::A1644;
+        let toml_str = config.to_toml_string().expect("should serialize config");
+        assert!(toml_str.contains("keyboard_model = \"A1644\""));
+
+        let loaded = Config::from_toml_str(&toml_str).expect("should deserialize");
+        assert_eq!(loaded.keyboard_model, AppleModelId::A1644);
     }
 }

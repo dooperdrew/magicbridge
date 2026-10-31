@@ -114,7 +114,22 @@ The following tests require physical connection of the Apple Magic Keyboard with
 
 ---
 
-## 6. QA Logging & Incident Tracking Protocol
+## 6. Multi-Model Apple Keyboard Hardware Matrix 🔬
+
+> **Claims Follow Evidence:** Models other than the author's physical A1843 are marked **`🔬 [Pending Community Hardware Confirmation]`** until verified by empirical test logs submitted by users via `.github/ISSUE_TEMPLATE/hardware_qa_report.md`. Automated invariant tests are marked `PASS`.
+
+| Test ID | Model | Form Factor | Connection & PID | Test Procedure | Expected Outcome | Status |
+|---|---|---|---|---|---|---|
+| **QA-MODEL-01** | Magic Keyboard with Numeric Keypad (A1843) | Full-Size (109 keys) | Lightning USB (`0x026C`) / BT (`0x004C:0x026C`) | Connect via Lightning or Bluetooth. Verify all 109 keys, F13-F19 remaps, and battery report 0x90. | Full 109-key matrix verified; battery percentage accurate; ISO AltGr suppressed. | Tooling Ready (Pending Confirmation) |
+| **QA-MODEL-02** | Magic Keyboard Compact (A1644) | Compact (78/79 keys) | Lightning USB (`0x0267`) / BT (`0x004C:0x0267`) | Connect A1644. Click `[Auto-Detect Model]`. Verify compact 78-key visual layout and compact inverted-T arrows. | Visual layout renders 78 keys without numpad; compact arrows function; battery report 0x90 accurate. | 🔬 Pending Community Test |
+| **QA-MODEL-03** | Magic Keyboard w/ Touch ID Compact (A2449) | Compact (78/79 keys) | Lightning USB (`0x029A`) / BT (`0x004C:0x029A`) | Connect A2449. Verify Touch ID top-right keycap and Fn combos for missing keys. | Top-right key mapped as Touch ID/Lock; Fn combos deliver PrtSc/Del/Home/End. | 🔬 Pending Community Test |
+| **QA-MODEL-04** | Magic Keyboard w/ Touch ID & Numpad (A2520) | Full-Size (109 keys) | Lightning USB (`0x029C`) / BT (`0x004C:0x029C`) | Connect A2520. Verify full numpad, F13-F19, and Touch ID corner key. | Full 109-key canvas active; all numpad keys and F-row keys functional. | 🔬 Pending Community Test |
+| **QA-MODEL-05** | Apple Wireless Keyboard (A1314) | Compact (78/79 keys) | Bluetooth Classic (`0x0255` / `0x0256`) | Pair A1314 over Bluetooth. Verify Bluetooth PnP battery reading (`PKEY_BLUETOOTH_BATTERY`). | Battery reported via Windows Bluetooth service; Eject key functional; zero stuck keys. | 🔬 Pending Community Test |
+| **QA-MODEL-06** | Apple Keyboard with Numpad Wired (A1243) | Full-Size (109 keys) | Wired USB (`0x0220` / `0x0221`) | Connect wired A1243 via USB cable. Verify USB bus-powered status (no battery gauge needed). | Top-rail shows "⚡ Wired USB Connected"; full 109-key layout editable. | 🔬 Pending Community Test |
+
+---
+
+## 7. QA Logging & Incident Tracking Protocol
 
 When running empirical tests:
 1. Record results directly into this document with date, firmware/OS details, and pass/fail state.

@@ -678,7 +678,10 @@ pub fn export_qa_report(state: &HardwareQaViewState, i18n: &I18n) -> Result<Path
 /// Renders the visual A1843 QA keyboard matrix.
 fn render_qa_visual_keyboard(ui: &mut Ui, state: &mut HardwareQaViewState) {
     let available_width = ui.available_width().min(ui.max_rect().width());
-    let total_units_x = 23.5f32;
+    let total_units_x = match state.model.form_factor() {
+        magicbridge_core::KeyboardModelType::FullSize => 23.5f32,
+        magicbridge_core::KeyboardModelType::Compact => 15.0f32,
+    };
     let unit_size = ((available_width - 8.0) / total_units_x).clamp(16.0, 34.0);
     let key_height = unit_size * 0.95;
     let key_spacing = 2.0;
@@ -704,7 +707,8 @@ fn render_qa_visual_keyboard(ui: &mut Ui, state: &mut HardwareQaViewState) {
     // Draw each physical key
     for key in &state.model.keys {
         let key_x = rect.left() + (key.x * (unit_size + key_spacing)) + 4.0;
-        let key_y = rect.top() + (key.row as f32 * (key_height + key_spacing)) + 4.0;
+        let key_y =
+            rect.top() + ((key.row as f32 + key.y_offset) * (key_height + key_spacing)) + 4.0;
         let key_w = (key.width * unit_size) + ((key.width - 1.0) * key_spacing);
         let key_h = (key.height * key_height) + ((key.height - 1.0) * key_spacing);
 

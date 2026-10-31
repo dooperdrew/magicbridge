@@ -17,7 +17,7 @@ use eframe::{
     egui::{self, Color32, CornerRadius, ProgressBar, RichText, Stroke, ViewportBuilder},
 };
 use magicbridge_core::{
-    Config, FnKeyChoice, KeyboardLayout, ModifierPreset, TopRowMode, atomic_write,
+    AppleModelId, Config, FnKeyChoice, KeyboardLayout, ModifierPreset, TopRowMode, atomic_write,
     default_config_path,
 };
 use windows::Win32::Foundation::{ERROR_SUCCESS, WIN32_ERROR};
@@ -417,6 +417,7 @@ pub struct InstallerApp {
     pub install_status_text: String,
     pub install_error: Option<String>,
     // Step 3 first-run settings
+    pub selected_model: AppleModelId,
     pub selected_layout: KeyboardLayout,
     pub selected_modifier: ModifierPreset,
     pub selected_fn_key: FnKeyChoice,
@@ -443,6 +444,7 @@ impl Default for InstallerApp {
             install_progress: 0.0,
             install_status_text: String::from("Ready to install"),
             install_error: None,
+            selected_model: magicbridge_agent::detect_connected_apple_model().unwrap_or_default(),
             selected_layout: detected_layout,
             selected_modifier: ModifierPreset::WindowsLayout,
             selected_fn_key: FnKeyChoice::RightOption,
@@ -708,6 +710,29 @@ impl InstallerApp {
 
         ui.add_space(6.0);
 
+        // 0. Keyboard Model Selection
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("Apple Model:").strong());
+            let combo = egui::ComboBox::from_id_salt("wizard_setup_model")
+                .selected_text(self.selected_model.display_name())
+                .show_ui(ui, |ui| {
+                    for m in AppleModelId::all() {
+                        ui.selectable_value(&mut self.selected_model, *m, m.display_name());
+                    }
+                });
+            combo
+                .response
+                .on_hover_text("Select your Apple keyboard model or click Auto-Detect");
+
+            if ui.button("🔍 Auto-Detect Model").clicked()
+                && let Some(detected) = magicbridge_agent::detect_connected_apple_model()
+            {
+                self.selected_model = detected;
+            }
+        });
+
+        ui.add_space(4.0);
+
         // 1. Keyboard Layout Selection
         ui.horizontal(|ui| {
             ui.label(RichText::new("Keyboard Layout:").strong());
@@ -883,7 +908,10 @@ impl InstallerApp {
 
                 if ui.add(save_btn).clicked() {
                     // Save initial configuration
-                    let mut config = Config::default();
+                    let mut config = Config {
+                        keyboard_model: self.selected_model,
+                        ..Default::default()
+                    };
                     if let Some(profile) = config.active_profile_mut() {
                         profile.layout = self.selected_layout.clone();
                         profile.modifier_preset = self.selected_modifier;

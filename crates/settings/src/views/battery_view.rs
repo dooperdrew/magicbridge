@@ -115,9 +115,10 @@ pub fn show(
             .checkbox(&mut config.battery_tray_badge, i18n.t("battery.tray_badge"))
             .on_hover_text(i18n.t("battery.tray_badge_desc"));
         crate::set_accessible_name(ui, chk.id, i18n.t("battery.tray_badge"));
-        if chk.changed() {
+        if chk.changed() || chk.clicked() {
             println!("[CONFIG] Battery tray badge toggled: applied OK");
             let _ = std::io::stdout().flush();
+            ui.ctx().request_repaint();
             modified = true;
         }
 

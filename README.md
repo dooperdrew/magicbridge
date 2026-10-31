@@ -2,9 +2,9 @@
 
 # MagicBridge ⌨️ 🌉
 
-**A tiny, invisible, native Windows 10/11 utility that makes the Apple Magic Keyboard with Numeric Keypad (A1843) feel right at home on Windows.**
+**A tiny, invisible, native Windows 10/11 utility that makes Apple Keyboards (Full-Size & Compact) feel right at home on Windows.**
 
-[![Latest Release](https://img.shields.io/github/v/release/DooperDrew/magicbridge?logo=github&label=release%20v0.2.1)](https://github.com/DooperDrew/magicbridge/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/DooperDrew/magicbridge?logo=github&label=release%20v0.4.0)](https://github.com/DooperDrew/magicbridge/releases/latest)
 [![Rust Stable](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows 10/11 x64](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-informational.svg)](https://microsoft.com/windows)
@@ -20,13 +20,22 @@
 
 ---
 
+## Supported Apple Keyboards
+
+MagicBridge natively supports the full desktop Apple keyboard family:
+- **Full-Size with Numeric Keypad (109 Keys):** Magic Keyboard with Numeric Keypad (`A1843`, `A2520`, `A3123`) & Apple Keyboard Wired (`A1243`).
+- **Compact Tenkeyless (78/79 Keys):** Magic Keyboard Compact (`A1644`, `A2449`, `A2450`, `A3122`) & Apple Wireless Keyboard (`A1314`).
+- **Live Hardware Auto-Detection:** Automatically identifies connected models via USB/Bluetooth Product ID (PID) and adapts the visual keyboard geometry.
+
+---
+
 ## The Problem
 
-The Apple Magic Keyboard with Numeric Keypad (**model A1843**) is a gorgeous piece of hardware, but when paired with Windows 10 or 11 over Bluetooth or Lightning-to-USB:
+Apple Keyboards are gorgeous pieces of hardware, but when paired with Windows 10 or 11 over Bluetooth or Lightning/USB:
 - **Missing or locked Fn key:** Windows' inbox `kbdhid.sys` locks the main keyboard collection exclusively, leaving the Fn layer inaccessible.
 - **Modifier chaos:** `Cmd` and `Option` sit physically where Windows users expect `Alt` and `Windows`.
 - **Dumb top row:** F1–F12 media keys (volume, play/pause, rewind) don't behave reliably or switchable with standard function keys.
-- **Missing standard keys:** No `Print Screen`, `Scroll Lock`, `Pause`, or dedicated `Insert`. `F13`–`F19` and `Clear` are recognized but idle.
+- **Missing standard keys:** No `Print Screen`, `Scroll Lock`, `Pause`, or dedicated `Insert` / Forward `Delete`.
 - **No battery indicator:** Windows does not surface battery percentage on the taskbar or tray.
 - **Heavy or invasive workarounds:** Existing third-party solutions often require paid licenses, obsolete Apple Boot Camp drivers, kernel-mode filters (which trigger game anti-cheat bans), or bulky Electron apps.
 
