@@ -241,13 +241,21 @@ In the Settings GUI, any key from `F13` to `F19` or `Clear` can be assigned to:
 
 ### Named Profiles
 MagicBridge allows you to create and maintain multiple independent **Profiles**. Each profile stores:
-- Active physical and language layout (`ISO Italian`, `ANSI US`, `ISO UK`, `ISO German`, `ISO French`, or Custom).
+- Active physical and language layout (detected Windows layouts or full worldwide catalog: Italian, US, UK, German, French, Spanish, Portuguese, Swiss, Nordic, Japanese JIS, Dutch, Polish, Russian, Ukrainian, Turkish, Czech, Hungarian, Greek, Arabic, Hebrew, Korean, Chinese, or Custom).
 - Modifier preset (Windows, Mac, or Custom).
 - Top-row mode (Media first vs. F-keys first).
 - Selected Fn trigger key.
 - Custom normal-layer and Fn-layer key mappings.
 
 You can switch active profiles instantly from:
+1. **System Tray Right-Click Menu:** `Profile` sub-menu with live checkmarks.
+2. **Settings Window Profile Bar:** Top dropdown menu.
+
+### Visual Keyboard Customization
+- **Scale / Zoom Control:** Select `Fit`, `90%`, `100%`, or `115%` to scale keycap dimensions to match your display resolution.
+- **Key Editor Search Filter:** Quickly type into the search filter to narrow down key choices (e.g. `Print`, `Volume`, `F14`).
+- **1-Click Quick Presets:** Instantly bind missing keys (`PrintScreen`, `ScrollLock`, `Pause`, `Insert`, `Delete`) with a single click.
+- **Color Theme:** Toggle between `System Default`, `Dark`, and `Light` mode in General settings.
 - The **System Tray &rarr; Profile** submenu.
 - The **Settings GUI** profile dropdown.
 - An optional global shortcut hotkey.

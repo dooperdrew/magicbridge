@@ -43,6 +43,7 @@ pub struct KeyEditorState {
     pub selected_key_id: Option<String>,
     pub action_type_idx: usize,
     pub target_key_name: String,
+    pub target_filter: String,
     pub media_command: String,
     pub launch_command: String,
     pub url_target: String,
@@ -55,6 +56,7 @@ impl Default for KeyEditorState {
             selected_key_id: None,
             action_type_idx: 0, // 0 = Key, 1 = Media, 2 = Launch, 3 = URL, 4 = Shortcut
             target_key_name: "PrintScreen".to_string(),
+            target_filter: String::new(),
             media_command: "volume_up".to_string(),
             launch_command: String::new(),
             url_target: String::new(),
@@ -73,6 +75,7 @@ pub struct KeyboardViewState {
     pub dialog: ProfileDialog,
     pub dialog_error: Option<String>,
     pub dialog_focus_needed: bool,
+    pub canvas_scale: f32,
 }
 
 impl Default for KeyboardViewState {
@@ -85,6 +88,7 @@ impl Default for KeyboardViewState {
             dialog: ProfileDialog::None,
             dialog_error: None,
             dialog_focus_needed: false,
+            canvas_scale: 0.0,
         }
     }
 }
@@ -361,6 +365,15 @@ pub fn show(
         ui.label(i18n.t("keyboard.legend_fn_trigger"));
         ui.colored_label(Color32::from_rgb(230, 170, 0), "■");
         ui.label(i18n.t("keyboard.legend_selected"));
+
+        ui.separator();
+
+        // Keyboard Canvas Zoom / Scale Control
+        ui.label(i18n.t("keyboard.zoom_label"));
+        ui.selectable_value(&mut state.canvas_scale, 0.0, i18n.t("keyboard.zoom_fit"));
+        ui.selectable_value(&mut state.canvas_scale, 0.9, "90%");
+        ui.selectable_value(&mut state.canvas_scale, 1.0, "100%");
+        ui.selectable_value(&mut state.canvas_scale, 1.15, "115%");
     });
 
     // Handle "Press a key to select" keyboard listener
@@ -478,9 +491,14 @@ fn render_visual_keyboard(
 ) -> Option<String> {
     let mut clicked_key_id = None;
 
-    // Dynamically calculate unit_size based on available width (Issue #14)
+    // Dynamically calculate unit_size based on available width (Issue #14) or explicit scale
     let available_width = ui.available_width();
-    let unit_size = calculate_unit_size(available_width);
+    let base_unit = calculate_unit_size(available_width);
+    let unit_size = if state.canvas_scale > 0.0 {
+        (base_unit * state.canvas_scale).clamp(18.0, 48.0)
+    } else {
+        base_unit
+    };
 
     // Dynamically scale key height, spacing, and font sizes
     let key_height = (unit_size * 0.95).round();
@@ -493,8 +511,9 @@ fn render_visual_keyboard(
     let margin_x = ((available_width - keyboard_total_width) / 2.0).max(4.0);
     let margin_y = 4.0;
 
+    let canvas_width = available_width.max(keyboard_total_width + 16.0);
     let (rect, _response) =
-        ui.allocate_exact_size(Vec2::new(available_width, total_height), Sense::hover());
+        ui.allocate_exact_size(Vec2::new(canvas_width, total_height), Sense::hover());
 
     let painter = ui.painter_at(rect);
 
@@ -856,11 +875,33 @@ fn render_editor_parameters(ui: &mut Ui, editor: &mut KeyEditorState, i18n: &I18
                 "Space",
             ];
 
+            ui.add(
+                egui::TextEdit::singleline(&mut editor.target_filter)
+                    .hint_text(i18n.t("keyboard.search_filter"))
+                    .desired_width(110.0),
+            )
+            .on_hover_text(i18n.t("keyboard.search_filter"));
+
+            let filter_lower = editor.target_filter.trim().to_lowercase();
+            let filtered_targets: Vec<&str> = if filter_lower.is_empty() {
+                targets.to_vec()
+            } else {
+                targets
+                    .iter()
+                    .copied()
+                    .filter(|t| t.to_lowercase().contains(&filter_lower))
+                    .collect()
+            };
+
             let combo = egui::ComboBox::from_id_salt("target_key_combo")
                 .selected_text(&editor.target_key_name)
                 .show_ui(ui, |ui| {
-                    for t in targets {
-                        ui.selectable_value(&mut editor.target_key_name, t.to_string(), t);
+                    if filtered_targets.is_empty() {
+                        ui.label(egui::RichText::new("No matching keys").weak().small());
+                    } else {
+                        for t in filtered_targets {
+                            ui.selectable_value(&mut editor.target_key_name, t.to_string(), t);
+                        }
                     }
                 });
             combo.response.on_hover_text(i18n.t("editor.target_key"));

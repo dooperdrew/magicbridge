@@ -100,7 +100,21 @@ The following tests require physical connection of the Apple Magic Keyboard with
 
 ---
 
-## 5. QA Logging & Incident Tracking Protocol
+## 5. UI/UX & Ergonomics Verification Matrix
+
+| Test ID | Test Category | Target Feature | Test Procedure | Expected Outcome | Pass/Fail |
+|---|---|---|---|---|---|
+| **QA-UI-01** | Installer | Native 5-Step Setup Wizard | Launch `MagicBridge-Setup.exe` on clean system. Advance through 5 steps. | Step breadcrumbs update, progress bar animates, `%LOCALAPPDATA%\Programs\MagicBridge` installs, and daemon starts. | Pending Test |
+| **QA-UI-02** | Uninstaller | Clean Uninstallation | Launch `--uninstall` via Start Menu or Windows Settings. | All binary files, shortcuts, and registry entries removed cleanly without leftovers. | Pending Test |
+| **QA-UI-03** | Localization | Universal Windows Layout Selection | In Keyboard tab, open Layout dropdown. Inspect *"── Detected on this PC ──"* and world catalog. | Active Windows PC input languages appear dynamically; worldwide catalog supports all regional layouts. | Pending Test |
+| **QA-UI-04** | Visual Ergonomics | Keyboard Scale / Zoom Control | In Keyboard toolbar, toggle `Fit`, `90%`, `100%`, `115%`. | Keyboard unit size scales smoothly; key labels remain crisp and unclamped; horizontal scroll available if zoomed. | Pending Test |
+| **QA-UI-05** | Theme | Dark / Light / System Mode | In General Settings tab, switch Color Theme between `System Default`, `Dark`, and `Light`. | UI visuals update immediately to dark or light themes matching preference. | Pending Test |
+| **QA-UI-06** | Remap Ergonomics | Quick Presets & Search Filter | Select a key in visual keyboard. Click `[PrintScreen]`; type `"f1"` in filter box. | Quick preset assigns immediately; filter box narrows target dropdown in real time. | Pending Test |
+| **QA-UI-07** | Status & Tray | Top-Rail Status Pill & Tray Profiles | Inspect top-rail pill across tabs; right-click system tray icon and switch profile. | Pill shows live battery & connection; clicking pill opens Battery tab; tray menu allows 1-click profile switching. | Pending Test |
+
+---
+
+## 6. QA Logging & Incident Tracking Protocol
 
 When running empirical tests:
 1. Record results directly into this document with date, firmware/OS details, and pass/fail state.

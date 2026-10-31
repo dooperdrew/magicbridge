@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use egui::Ui;
 use magicbridge_agent::autostart;
-use magicbridge_core::{Config, NamedProfile};
+use magicbridge_core::{Config, NamedProfile, ThemeMode};
 
 use crate::i18n::I18n;
 use crate::ipc::SettingsIpc;
@@ -74,9 +74,44 @@ pub fn show(
             }
         });
 
+        // 2. Color Theme Selector
+        ui.horizontal(|ui| {
+            ui.label(i18n.t("general.theme"));
+            let current_theme_str = match config.theme {
+                ThemeMode::System => i18n.t("general.theme_system"),
+                ThemeMode::Dark => i18n.t("general.theme_dark"),
+                ThemeMode::Light => i18n.t("general.theme_light"),
+            };
+            let combo = egui::ComboBox::from_id_salt("ui_theme_combo")
+                .selected_text(current_theme_str)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut config.theme,
+                        ThemeMode::System,
+                        i18n.t("general.theme_system"),
+                    );
+                    ui.selectable_value(
+                        &mut config.theme,
+                        ThemeMode::Dark,
+                        i18n.t("general.theme_dark"),
+                    );
+                    ui.selectable_value(
+                        &mut config.theme,
+                        ThemeMode::Light,
+                        i18n.t("general.theme_light"),
+                    );
+                });
+            let res = combo.response.on_hover_text(i18n.t("general.theme"));
+            crate::set_accessible_name(ui, res.id, i18n.t("general.theme"));
+
+            if res.changed() {
+                modified = true;
+            }
+        });
+
         ui.separator();
 
-        // 2. Autostart with Windows (F8.1)
+        // 3. Autostart with Windows (F8.1)
         let autostart_active = autostart::is_autostart_enabled().unwrap_or(false);
         let mut autostart_toggle = autostart_active;
         if ui

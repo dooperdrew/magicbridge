@@ -100,7 +100,7 @@ impl MagicBridgeApp {
         if let Ok(toml_str) = self.config.to_toml_string() {
             let _ = atomic_write(&self.config_path, toml_str);
             let _ = self.ipc.reload_config();
-            println!("[CONFIG] Config persisted and reloaded successfully");
+            println!("[CONFIG] Saved and applied config successfully: OK");
             let _ = std::io::stdout().flush();
         }
     }
@@ -116,6 +116,13 @@ impl MagicBridgeApp {
 
 impl App for MagicBridgeApp {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        // Apply visual theme from configuration
+        match self.config.theme {
+            magicbridge_core::ThemeMode::Dark => ctx.set_visuals(egui::Visuals::dark()),
+            magicbridge_core::ThemeMode::Light => ctx.set_visuals(egui::Visuals::light()),
+            magicbridge_core::ThemeMode::System => {}
+        }
+
         // Poll daemon status every 2 seconds
         if self.last_poll.elapsed() >= Duration::from_secs(2) {
             self.daemon_status = self.ipc.query_status();

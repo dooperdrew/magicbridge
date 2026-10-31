@@ -4,32 +4,44 @@ All development steps, hardware discoveries, architectural decisions, and commit
 
 ---
 
-## 2026-10-31 — Extensive Autonomous UI/UX Test & Ergonomics Hardening (39 Steps, 0 Defects)
+## 2026-10-31 — Extensive Autonomous UI/UX Test, Visual Ergonomics Hardening & Theme Selection (39 Steps, 0 Defects)
 
 ### Objective & Architecture
-- Executed an extensive 40-step autonomous UI/UX crawl and deep verification session using `ui-qa-tester` against the unified `target\release\magicbridge.exe` application alone.
+- Executed an extensive 39-step autonomous UI/UX crawl and deep verification session using `ui-qa-tester` against the unified `target\release\magicbridge.exe` application alone.
 - Audited all views, tab transitions, modal dialogs, and interactive widgets for accessibility (AccessKit / Windows UI Automation), responsive layout clipping, responsiveness (dHash visual delta and stdout/stderr log correlation), and process health.
-- Hardened all container groups and modals with explicit semantic AccessKit labels, added auto-focus for text inputs, integrated a persistent top-rail battery and connection status pill, and added 1-click Quick Presets for missing Windows keys.
+- Implemented core user-requested UI/UX ergonomics: Color Theme Selection (System Default / Dark / Light), Keyboard Canvas Zoom Controls (Fit / 90% / 100% / 115%), Real-Time Key Remapping Search Filter, 1-Click Quick Presets for missing Windows keys, and a persistent top-rail battery and device status pill.
+- Authored Section 5 *UI/UX & Ergonomics Verification Matrix* (`QA-UI-01` to `QA-UI-07`) in `docs/06-qa-and-validation.md` for human testing.
 
 ### Key Deliverables & Enhancements
-1. **AccessKit & Windows UI Automation Compliance:**
+1. **Color Theme Mode Selection (`crates/core/src/config.rs`, `general_view.rs`):**
+   - Added `ThemeMode` enum (`System`, `Dark`, `Light`) to `core::Config` with serde serialization and localization support.
+   - Added Color Theme selector combobox in General Settings with immediate live `egui::Context::set_visuals` application (`egui::Visuals::dark()` / `egui::Visuals::light()`).
+2. **Visual Keyboard Canvas Zoom & Scale Controls (`crates/settings/src/views/keyboard_view.rs`):**
+   - Added zoom toolbar controls (`Fit`, `90%`, `100%`, `115%`) to `KeyboardViewState`.
+   - Scaled key pitch and canvas dimension dynamically with horizontal scrolling support in `CentralPanel`'s `ScrollArea`, ensuring the visual keyboard can be zoomed comfortably on any screen size.
+3. **Key Remapping Real-Time Search Filter (`crates/settings/src/views/keyboard_view.rs`):**
+   - Added instant search text filter box in the Key Remapping Editor side panel (`target_filter`).
+   - Filters candidate target keys dynamically across standard, numpad, navigation, and media categories.
+4. **Missing Windows Keys Quick Presets (`crates/settings/src/views/keyboard_view.rs`):**
+   - Added 1-click Quick Preset buttons (`PrintScreen`, `ScrollLock`, `Pause`, `Insert`, `Delete`) in the Key Editor parameter section of `keyboard_view.rs`, allowing users to assign missing Windows keys with a single click instead of scrolling through the full dropdown.
+5. **AccessKit & Windows UI Automation Compliance:**
    - Resolved `A11Y-NAME-015-08` by assigning explicit accessible labels to all container groups and modal dialogs (`ui.group`) in `keyboard_view.rs` (`ProfileDialog::New`, `Duplicate`, `Rename`, `DeleteConfirm`, and the Key Remapping Editor).
    - Set semantic accessible names on all major view containers: `battery_view.rs` ("Battery & Power"), `top_row_view.rs` ("Top Row & Fn Keys"), `general_view.rs` ("General Settings"), and `about_view.rs` ("About & System Status").
    - Labeled `CentralPanel` ("Main Settings View") and `ScrollArea` inner/outer IDs ("Settings Content Area") in `crates/settings/src/app.rs`.
-2. **Dialog Usability & Keyboard Focus Ergonomics:**
+6. **Dialog Usability & Keyboard Focus Ergonomics:**
    - Added `dialog_focus_needed` flag in `KeyboardViewState` to automatically focus the name text edit field (`res.request_focus()`) whenever a Profile Dialog (New, Duplicate, Rename) opens, allowing users to type immediately without an extra click.
-3. **Missing Windows Keys Quick Presets:**
-   - Added 1-click Quick Preset buttons (`PrintScreen`, `ScrollLock`, `Pause`, `Insert`, `Delete`) in the Key Editor parameter section of `keyboard_view.rs`, allowing users to assign missing Windows keys with a single click instead of searching through a 40-item dropdown.
-4. **Persistent Top-Bar Connection & Battery Status Pill:**
+7. **Persistent Top-Bar Connection & Battery Status Pill:**
    - Added a right-aligned live status pill in the top navigation rail (`🔋 {pct}%` or `⚡ A1843 Connected` / `⚪ Disconnected`), enabling users to monitor battery health from any tab.
    - Wired the status pill to switch to the Battery tab on click, auto-disabled when already on the Battery tab, and refreshed daemon status with responsive stdout logging.
-5. **Config Mutation Feedback & Responsiveness:**
-   - Updated `MagicBridgeApp::persist_and_notify` to log successful configuration writes and IPC reload notifications to stdout with immediate flushing, ensuring instant responsiveness acknowledgment across all checkboxes and settings toggles.
-6. **Verification & Quality Gate:**
-   - Executed 39-step deep autonomous crawl via `ui-qa-cli.exe run --config qa-session.toml`:
-     - **0 Critical | 0 High | 0 Medium | 0 UX Suggestions**
-     - **152 interactive elements discovered, 0 dead controls, 0 accessibility gaps, 0 UI clipping defects, 0 hung processes**.
-   - Verified cargo formatting (`cargo fmt --all -- --check`), strict clippy linter (`cargo clippy --workspace --all-targets -- -D warnings`), 139 unit tests (`cargo test --workspace -- --test-threads=1`), and release packaging.
+8. **Config Mutation Feedback & Responsiveness:**
+   - Updated `MagicBridgeApp::persist_and_notify` to log successful configuration writes and IPC reload notifications to stdout with immediate flushing (`[CONFIG] Saved and applied config successfully: OK`), ensuring instant responsiveness acknowledgment across all checkboxes and settings toggles.
+9. **UI/UX & Ergonomics Verification Matrix (`docs/06-qa-and-validation.md`):**
+   - Added structured test cases (`QA-UI-01` to `QA-UI-07`) covering theme switching, canvas zoom, key filter search, top-bar status pill, quick presets, modal focus, and uninstaller clean removal.
+10. **Verification & Quality Gate:**
+    - Executed 39-step deep autonomous crawl via `ui-qa-cli.exe run --config qa-session.toml`:
+      - **0 Critical | 0 High | 0 Medium | 0 UX Suggestions**
+      - **158 interactive elements discovered, 0 dead controls, 0 accessibility gaps, 0 UI clipping defects, 0 hung processes**.
+    - Verified cargo formatting (`cargo fmt --all -- --check`), strict clippy linter (`cargo clippy --workspace --all-targets -- -D warnings`), 139 unit tests (`cargo test --workspace -- --test-threads=1`), and release packaging.
 
 ---
 

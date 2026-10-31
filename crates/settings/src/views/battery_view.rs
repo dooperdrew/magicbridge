@@ -2,6 +2,8 @@
 //!
 //! Complies with F6.1, F6.2, F6.3, and docs/04-ux.md.
 
+use std::io::Write;
+
 use egui::{Color32, ProgressBar, Ui};
 use magicbridge_agent::DaemonStatus;
 use magicbridge_core::Config;
@@ -109,11 +111,13 @@ pub fn show(
         ui.add_space(4.0);
 
         // 5. Dynamic Battery Tray Badge Toggle (IMP-04)
-        if ui
+        let chk = ui
             .checkbox(&mut config.battery_tray_badge, i18n.t("battery.tray_badge"))
-            .on_hover_text(i18n.t("battery.tray_badge_desc"))
-            .changed()
-        {
+            .on_hover_text(i18n.t("battery.tray_badge_desc"));
+        crate::set_accessible_name(ui, chk.id, i18n.t("battery.tray_badge"));
+        if chk.changed() {
+            println!("[CONFIG] Battery tray badge toggled: applied OK");
+            let _ = std::io::stdout().flush();
             modified = true;
         }
 

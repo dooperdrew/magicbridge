@@ -52,7 +52,10 @@ legend_normal = "Default"
 legend_swapped = "Cmd ↔ Alt Swap"
 legend_fn_trigger = "Fn Trigger Key"
 legend_selected = "Selected"
+zoom_label = "Scale:"
+zoom_fit = "Fit"
 search_placeholder = "Search key..."
+search_filter = "Filter keys..."
 
 [editor]
 title = "Key Editor"
@@ -119,6 +122,10 @@ info = "Battery percentage is queried directly from Apple Vendor Collection 0xFF
 [general]
 title = "General Settings"
 language = "Interface Language:"
+theme = "Color Theme:"
+theme_system = "System Default"
+theme_dark = "Dark"
+theme_light = "Light"
 autostart = "Start MagicBridge automatically at Windows login (HKCU, no admin required)"
 pause_hotkey = "Global Pause Hotkey (e.g. F19):"
 game_mode = "Game Mode (Auto-pause remapping for games)"

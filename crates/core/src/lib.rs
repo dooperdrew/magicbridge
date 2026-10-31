@@ -12,7 +12,7 @@ pub mod key;
 
 pub use config::{
     Config, ConfigError, CustomAction, FnKeyChoice, KeyAction, KeyboardLayout, ModifierPreset,
-    NamedProfile, TopRowMode, atomic_write, default_config_dir, default_config_path,
+    NamedProfile, ThemeMode, TopRowMode, atomic_write, default_config_dir, default_config_path,
 };
 pub use engine::{CompiledMappingTable, RemapAction, compile_profile};
 pub use key::{

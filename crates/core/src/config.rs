@@ -356,12 +356,38 @@ impl NamedProfile {
     }
 }
 
+/// Application visual theme mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ThemeMode {
+    /// Follow Windows system appearance (light / dark).
+    #[default]
+    System,
+    /// Force dark theme.
+    Dark,
+    /// Force light theme.
+    Light,
+}
+
+impl fmt::Display for ThemeMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::System => write!(f, "System"),
+            Self::Dark => write!(f, "Dark"),
+            Self::Light => write!(f, "Light"),
+        }
+    }
+}
+
 /// Global MagicBridge configuration root (F7.4, F7.6, F7.7).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {
     /// Name of the currently active profile.
     #[serde(default = "default_active_profile")]
     pub active_profile: String,
+    /// Visual theme mode: System, Dark, or Light.
+    #[serde(default)]
+    pub theme: ThemeMode,
     /// Whether the agent automatically launches at Windows user log-in (F8.1).
     #[serde(default)]
     pub autostart: bool,
@@ -423,6 +449,7 @@ impl Default for Config {
 
         Self {
             active_profile: active_name,
+            theme: ThemeMode::default(),
             autostart: false,
             battery_poll_minutes: default_battery_poll_minutes(),
             low_battery_threshold_percent: default_battery_threshold(),

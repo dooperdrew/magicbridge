@@ -52,7 +52,10 @@ legend_normal = "Predefinito"
 legend_swapped = "Scambio Cmd ↔ Alt"
 legend_fn_trigger = "Tasto Trigger Fn"
 legend_selected = "Selezionato"
+zoom_label = "Scala:"
+zoom_fit = "Adatta"
 search_placeholder = "Cerca tasto..."
+search_filter = "Filtra tasti..."
 
 [editor]
 title = "Modifica Tasto"
@@ -119,6 +122,10 @@ info = "La percentuale della batteria viene letta direttamente dalla Apple Vendo
 [general]
 title = "Impostazioni Generali"
 language = "Lingua dell'Interfaccia:"
+theme = "Tema Visivo:"
+theme_system = "Predefinito di Sistema"
+theme_dark = "Scuro"
+theme_light = "Chiaro"
 autostart = "Avvia MagicBridge automaticamente all'accesso a Windows (HKCU, nessun diritto admin)"
 pause_hotkey = "Scorciatoia Globale Pausa (es. F19):"
 game_mode = "Modalità Gioco (Pausa automatica rimappature)"
