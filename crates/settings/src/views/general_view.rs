@@ -40,9 +40,11 @@ pub fn show(
     i18n: &mut I18n,
 ) -> bool {
     let mut modified = false;
+    let title = i18n.t("general.title").to_string();
 
-    ui.group(|ui| {
-        ui.heading(i18n.t("general.title"));
+    let group = ui.group(|ui| {
+        crate::set_accessible_name(ui, ui.id(), &title);
+        ui.heading(&title);
         ui.add_space(4.0);
 
         // 1. UI Language Selector (F7.3)
@@ -279,6 +281,7 @@ pub fn show(
             }
         }
     });
+    crate::set_accessible_name(ui, group.response.id, title);
 
     modified
 }

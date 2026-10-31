@@ -49,7 +49,9 @@ listen_key = "Press a key to select"
 listening = "Listening... Press any physical key"
 legend_remapped = "Remapped"
 legend_normal = "Default"
+legend_swapped = "Cmd ↔ Alt Swap"
 legend_fn_trigger = "Fn Trigger Key"
+legend_selected = "Selected"
 search_placeholder = "Search key..."
 
 [editor]

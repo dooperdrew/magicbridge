@@ -9,8 +9,10 @@ use crate::i18n::I18n;
 
 /// Renders the About and diagnostics view.
 pub fn show(ui: &mut Ui, daemon_status: Option<&DaemonStatus>, i18n: &I18n) {
-    ui.group(|ui| {
-        ui.heading(i18n.t("about.title"));
+    let title = i18n.t("about.title");
+    let group = ui.group(|ui| {
+        crate::set_accessible_name(ui, ui.id(), title);
+        ui.heading(title);
         ui.label(i18n.t("about.tagline"));
         ui.add_space(6.0);
 
@@ -107,4 +109,5 @@ pub fn show(ui: &mut Ui, daemon_status: Option<&DaemonStatus>, i18n: &I18n) {
         ui.label(i18n.t("about.non_admin_note"));
         ui.label(i18n.t("about.license"));
     });
+    crate::set_accessible_name(ui, group.response.id, title);
 }

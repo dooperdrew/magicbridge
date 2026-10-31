@@ -72,6 +72,7 @@ pub struct KeyboardViewState {
     pub editor: KeyEditorState,
     pub dialog: ProfileDialog,
     pub dialog_error: Option<String>,
+    pub dialog_focus_needed: bool,
 }
 
 impl Default for KeyboardViewState {
@@ -83,6 +84,7 @@ impl Default for KeyboardViewState {
             editor: KeyEditorState::default(),
             dialog: ProfileDialog::None,
             dialog_error: None,
+            dialog_focus_needed: false,
         }
     }
 }
@@ -128,6 +130,7 @@ pub fn show(
                 layout: KeyboardLayout::IsoItalian,
             };
             state.dialog_error = None;
+            state.dialog_focus_needed = true;
         }
 
         if ui.button(i18n.t("profile.duplicate")).clicked() {
@@ -135,6 +138,7 @@ pub fn show(
                 name: format!("{} (Copy)", config.active_profile),
             };
             state.dialog_error = None;
+            state.dialog_focus_needed = true;
         }
 
         if ui.button(i18n.t("profile.rename")).clicked() {
@@ -142,6 +146,7 @@ pub fn show(
                 name: config.active_profile.clone(),
             };
             state.dialog_error = None;
+            state.dialog_focus_needed = true;
         }
 
         let can_delete = config.profiles.len() > 1;
@@ -153,6 +158,7 @@ pub fn show(
                 name: config.active_profile.clone(),
             };
             state.dialog_error = None;
+            state.dialog_focus_needed = true;
         }
 
         ui.separator();
@@ -349,8 +355,12 @@ pub fn show(
         // Color legend indicators
         ui.colored_label(Color32::from_rgb(45, 125, 210), "■");
         ui.label(i18n.t("keyboard.legend_remapped"));
+        ui.colored_label(Color32::from_rgb(40, 160, 100), "■");
+        ui.label(i18n.t("keyboard.legend_swapped"));
         ui.colored_label(Color32::from_rgb(180, 100, 40), "■");
         ui.label(i18n.t("keyboard.legend_fn_trigger"));
+        ui.colored_label(Color32::from_rgb(230, 170, 0), "■");
+        ui.label(i18n.t("keyboard.legend_selected"));
     });
 
     // Handle "Press a key to select" keyboard listener
@@ -669,8 +679,10 @@ fn render_key_editor(
     let available_width = ui.available_width();
     let is_compact = available_width < 850.0;
 
-    ui.group(|ui| {
-        ui.heading(i18n.t("editor.title"));
+    let title = i18n.t("editor.title");
+    let editor_group = ui.group(|ui| {
+        crate::set_accessible_name(ui, ui.id(), title);
+        ui.heading(title);
 
         let selected_id = state.editor.selected_key_id.clone();
         if let Some(key_id) = selected_id {
@@ -788,6 +800,7 @@ fn render_key_editor(
                 });
         }
     });
+    crate::set_accessible_name(ui, editor_group.response.id, title);
 
     change
 }
@@ -857,6 +870,19 @@ fn render_editor_parameters(ui: &mut Ui, editor: &mut KeyEditorState, i18n: &I18
                     .desired_width(120.0),
             )
             .on_hover_text(i18n.t("editor.target_key"));
+
+            ui.horizontal_wrapped(|ui| {
+                ui.label(egui::RichText::new("Quick presets:").small().weak());
+                for preset in ["PrintScreen", "ScrollLock", "Pause", "Insert", "Delete"] {
+                    if ui
+                        .small_button(preset)
+                        .on_hover_text(format!("Quick set target key to {preset}"))
+                        .clicked()
+                    {
+                        editor.target_key_name = preset.to_string();
+                    }
+                }
+            });
         }
         1 => {
             // Media Action
@@ -996,8 +1022,10 @@ fn render_profile_dialogs(
     match &mut state.dialog {
         ProfileDialog::None => {}
         ProfileDialog::New { name, layout } => {
-            ui.group(|ui| {
-                ui.heading(i18n.t("profile.create_title"));
+            let title = i18n.t("profile.create_title");
+            let group_res = ui.group(|ui| {
+                crate::set_accessible_name(ui, ui.id(), title);
+                ui.heading(title);
                 ui.horizontal(|ui| {
                     ui.label(i18n.t("profile.name_prompt"));
                     let prompt = i18n.t("profile.name_prompt");
@@ -1009,12 +1037,31 @@ fn render_profile_dialogs(
                         )
                         .on_hover_text(prompt);
                     crate::set_accessible_name(ui, res.id, prompt);
+                    if state.dialog_focus_needed {
+                        res.request_focus();
+                        state.dialog_focus_needed = false;
+                    }
                 });
                 ui.horizontal(|ui| {
                     ui.label(i18n.t("profile.layout"));
                     let combo = egui::ComboBox::from_id_salt("dialog_new_layout")
                         .selected_text(format!("{layout}"))
                         .show_ui(ui, |ui| {
+                            ui.label(
+                                egui::RichText::new("── Detected on this PC ──")
+                                    .small()
+                                    .weak(),
+                            );
+                            for (name, l) in crate::get_installed_windows_layouts() {
+                                let label = format!("✔ {name}");
+                                ui.selectable_value(layout, l, label);
+                            }
+                            ui.separator();
+                            ui.label(
+                                egui::RichText::new("── All Windows Keyboard Layouts ──")
+                                    .small()
+                                    .weak(),
+                            );
                             ui.selectable_value(layout, KeyboardLayout::IsoItalian, "ISO Italian");
                             ui.selectable_value(layout, KeyboardLayout::AnsiUs, "ANSI US");
                             ui.selectable_value(layout, KeyboardLayout::IsoUk, "ISO UK");
@@ -1033,6 +1080,22 @@ fn render_profile_dialogs(
                                 KeyboardLayout::JapaneseJis,
                                 "Japanese JIS",
                             );
+                            ui.selectable_value(layout, KeyboardLayout::Dutch, "Dutch");
+                            ui.selectable_value(
+                                layout,
+                                KeyboardLayout::Polish,
+                                "Polish (Programmers)",
+                            );
+                            ui.selectable_value(layout, KeyboardLayout::Russian, "Russian");
+                            ui.selectable_value(layout, KeyboardLayout::Ukrainian, "Ukrainian");
+                            ui.selectable_value(layout, KeyboardLayout::Turkish, "Turkish (Q / F)");
+                            ui.selectable_value(layout, KeyboardLayout::Czech, "Czech");
+                            ui.selectable_value(layout, KeyboardLayout::Hungarian, "Hungarian");
+                            ui.selectable_value(layout, KeyboardLayout::Greek, "Greek");
+                            ui.selectable_value(layout, KeyboardLayout::Arabic, "Arabic");
+                            ui.selectable_value(layout, KeyboardLayout::Hebrew, "Hebrew");
+                            ui.selectable_value(layout, KeyboardLayout::Korean, "Korean");
+                            ui.selectable_value(layout, KeyboardLayout::Chinese, "Chinese");
                         });
                     let combo_id = combo.response.id;
                     combo.response.on_hover_text(i18n.t("profile.layout"));
@@ -1071,10 +1134,13 @@ fn render_profile_dialogs(
                     }
                 });
             });
+            crate::set_accessible_name(ui, group_res.response.id, title);
         }
         ProfileDialog::Duplicate { name } => {
-            ui.group(|ui| {
-                ui.heading(i18n.t("profile.duplicate_title"));
+            let title = i18n.t("profile.duplicate_title");
+            let group_res = ui.group(|ui| {
+                crate::set_accessible_name(ui, ui.id(), title);
+                ui.heading(title);
                 ui.horizontal(|ui| {
                     ui.label(i18n.t("profile.name_prompt"));
                     let prompt = i18n.t("profile.name_prompt");
@@ -1086,6 +1152,10 @@ fn render_profile_dialogs(
                         )
                         .on_hover_text(prompt);
                     crate::set_accessible_name(ui, res.id, prompt);
+                    if state.dialog_focus_needed {
+                        res.request_focus();
+                        state.dialog_focus_needed = false;
+                    }
                 });
 
                 if let Some(ref err) = state.dialog_error {
@@ -1114,10 +1184,13 @@ fn render_profile_dialogs(
                     }
                 });
             });
+            crate::set_accessible_name(ui, group_res.response.id, title);
         }
         ProfileDialog::Rename { name } => {
-            ui.group(|ui| {
-                ui.heading(i18n.t("profile.rename_title"));
+            let title = i18n.t("profile.rename_title");
+            let group_res = ui.group(|ui| {
+                crate::set_accessible_name(ui, ui.id(), title);
+                ui.heading(title);
                 ui.horizontal(|ui| {
                     ui.label(i18n.t("profile.name_prompt"));
                     let prompt = i18n.t("profile.name_prompt");
@@ -1129,6 +1202,10 @@ fn render_profile_dialogs(
                         )
                         .on_hover_text(prompt);
                     crate::set_accessible_name(ui, res.id, prompt);
+                    if state.dialog_focus_needed {
+                        res.request_focus();
+                        state.dialog_focus_needed = false;
+                    }
                 });
 
                 if let Some(ref err) = state.dialog_error {
@@ -1155,10 +1232,13 @@ fn render_profile_dialogs(
                     }
                 });
             });
+            crate::set_accessible_name(ui, group_res.response.id, title);
         }
         ProfileDialog::DeleteConfirm { name } => {
-            ui.group(|ui| {
-                ui.heading(i18n.t("profile.delete_title"));
+            let title = i18n.t("profile.delete_title");
+            let group_res = ui.group(|ui| {
+                crate::set_accessible_name(ui, ui.id(), title);
+                ui.heading(title);
                 let confirm_text = i18n.t_format("profile.delete_confirm", &[("name", name)]);
                 ui.label(confirm_text);
 
@@ -1187,6 +1267,7 @@ fn render_profile_dialogs(
                     }
                 });
             });
+            crate::set_accessible_name(ui, group_res.response.id, title);
         }
     }
 

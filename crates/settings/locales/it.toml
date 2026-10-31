@@ -49,7 +49,9 @@ listen_key = "Premi un tasto per selezionare"
 listening = "In ascolto... Premi un tasto fisico"
 legend_remapped = "Rimappato"
 legend_normal = "Predefinito"
+legend_swapped = "Scambio Cmd ↔ Alt"
 legend_fn_trigger = "Tasto Trigger Fn"
+legend_selected = "Selezionato"
 search_placeholder = "Cerca tasto..."
 
 [editor]

@@ -16,9 +16,11 @@ pub struct TopRowViewState {
 /// Renders the Top Row & Fn settings view.
 pub fn show(ui: &mut Ui, _state: &mut TopRowViewState, config: &mut Config, i18n: &I18n) -> bool {
     let mut modified = false;
+    let title = i18n.t("top_row.title");
 
-    ui.group(|ui| {
-        ui.heading(i18n.t("top_row.title"));
+    let group = ui.group(|ui| {
+        crate::set_accessible_name(ui, ui.id(), title);
+        ui.heading(title);
         ui.add_space(4.0);
 
         if let Some(profile) = config.active_profile_mut() {
@@ -112,6 +114,7 @@ pub fn show(ui: &mut Ui, _state: &mut TopRowViewState, config: &mut Config, i18n
             ui.label(i18n.t("top_row.f3_f4_note"));
         }
     });
+    crate::set_accessible_name(ui, group.response.id, title);
 
     modified
 }

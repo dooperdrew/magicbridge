@@ -19,7 +19,7 @@ mode = "autonomous_crawl"
 focus_mode = "background"
 
 # Maximum UI exploration / goal steps
-max_steps = 15
+max_steps = 40
 
 # Safety blocklist regex preventing accidental destructive clicks
 destructive_control_regex = '(?i)\b(delete|format|factory\s*reset|erase|wipe|uninstall|flash\s*firmware)\b'

@@ -16,9 +16,11 @@ pub fn show(
     i18n: &I18n,
 ) -> bool {
     let mut modified = false;
+    let title = i18n.t("battery.title");
 
-    ui.group(|ui| {
-        ui.heading(i18n.t("battery.title"));
+    let group = ui.group(|ui| {
+        crate::set_accessible_name(ui, ui.id(), title);
+        ui.heading(title);
         ui.add_space(6.0);
 
         // 1. Live Battery Gauge & Percentage (F6.1)
@@ -120,6 +122,7 @@ pub fn show(
         // 6. Hardware Info Note (from M0 spike)
         ui.label(i18n.t("battery.info"));
     });
+    crate::set_accessible_name(ui, group.response.id, title);
 
     modified
 }

@@ -100,6 +100,8 @@ impl MagicBridgeApp {
         if let Ok(toml_str) = self.config.to_toml_string() {
             let _ = atomic_write(&self.config_path, toml_str);
             let _ = self.ipc.reload_config();
+            println!("[CONFIG] Config persisted and reloaded successfully");
+            let _ = std::io::stdout().flush();
         }
     }
 
@@ -258,94 +260,134 @@ impl App for MagicBridgeApp {
                             ctx.request_repaint();
                         }
                     }
+
+                    // Persistent right-aligned device & battery status pill
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let battery_pct = self
+                            .daemon_status
+                            .as_ref()
+                            .and_then(|s| s.battery_percent)
+                            .unwrap_or(0);
+                        let is_connected = self
+                            .daemon_status
+                            .as_ref()
+                            .is_some_and(|s| s.is_connected || s.agent_running);
+                        let pill_text = if is_connected {
+                            if battery_pct > 0 {
+                                format!("🔋 {}%", battery_pct)
+                            } else {
+                                "⚡ A1843 Connected".to_string()
+                            }
+                        } else {
+                            "⚪ Disconnected".to_string()
+                        };
+                        let is_on_battery_tab = self.current_tab == SettingsTab::Battery;
+                        let pill_btn = ui
+                            .add_enabled(!is_on_battery_tab, egui::Button::new(&pill_text))
+                            .on_hover_text("View Battery & Device Health");
+                        crate::set_accessible_name(ui, pill_btn.id, &pill_text);
+                        if pill_btn.clicked() {
+                            self.current_tab = SettingsTab::Battery;
+                            self.daemon_status = self.ipc.query_status();
+                            println!("[UI] Battery pill clicked -> switched to Battery tab");
+                            let _ = std::io::stdout().flush();
+                            ctx.request_repaint();
+                        }
+                    });
                 });
             }
         });
 
         // 3. Central Content Panel
         egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::vertical()
+            crate::set_accessible_name(ui, ui.id(), "Main Settings View");
+            let scroll_output = egui::ScrollArea::vertical()
+                .id_salt("main_scroll")
                 .auto_shrink([false, false])
-                .show(ui, |ui| match self.current_tab {
-                    SettingsTab::Keyboard => {
-                        if let Some(change) = keyboard_view::show(
-                            ui,
-                            &mut self.keyboard_state,
-                            &mut self.config,
-                            &self.i18n,
-                        ) {
-                            match change {
-                                ConfigChange::Modified => {
-                                    self.persist_and_notify();
-                                }
-                                ConfigChange::ActiveProfileChanged(name) => {
-                                    self.switch_profile_and_notify(&name);
-                                }
-                                ConfigChange::ProfileCreated(name) => {
-                                    self.switch_profile_and_notify(&name);
-                                }
-                                ConfigChange::ProfileDeleted(_) => {
-                                    self.persist_and_notify();
+                .show(ui, |ui| {
+                    crate::set_accessible_name(ui, ui.id(), "Settings Content Area");
+                    match self.current_tab {
+                        SettingsTab::Keyboard => {
+                            if let Some(change) = keyboard_view::show(
+                                ui,
+                                &mut self.keyboard_state,
+                                &mut self.config,
+                                &self.i18n,
+                            ) {
+                                match change {
+                                    ConfigChange::Modified => {
+                                        self.persist_and_notify();
+                                    }
+                                    ConfigChange::ActiveProfileChanged(name) => {
+                                        self.switch_profile_and_notify(&name);
+                                    }
+                                    ConfigChange::ProfileCreated(name) => {
+                                        self.switch_profile_and_notify(&name);
+                                    }
+                                    ConfigChange::ProfileDeleted(_) => {
+                                        self.persist_and_notify();
+                                    }
                                 }
                             }
                         }
-                    }
-                    SettingsTab::TopRow => {
-                        if top_row_view::show(
-                            ui,
-                            &mut self.top_row_state,
-                            &mut self.config,
-                            &self.i18n,
-                        ) {
-                            self.persist_and_notify();
+                        SettingsTab::TopRow => {
+                            if top_row_view::show(
+                                ui,
+                                &mut self.top_row_state,
+                                &mut self.config,
+                                &self.i18n,
+                            ) {
+                                self.persist_and_notify();
+                            }
                         }
-                    }
-                    SettingsTab::Battery => {
-                        if battery_view::show(
-                            ui,
-                            self.daemon_status.as_ref(),
-                            &mut self.config,
-                            &self.i18n,
-                        ) {
-                            self.persist_and_notify();
+                        SettingsTab::Battery => {
+                            if battery_view::show(
+                                ui,
+                                self.daemon_status.as_ref(),
+                                &mut self.config,
+                                &self.i18n,
+                            ) {
+                                self.persist_and_notify();
+                            }
                         }
-                    }
-                    SettingsTab::General => {
-                        if general_view::show(
-                            ui,
-                            &mut self.general_state,
-                            &mut self.config,
-                            &mut self.i18n,
-                        ) {
-                            self.persist_and_notify();
+                        SettingsTab::General => {
+                            if general_view::show(
+                                ui,
+                                &mut self.general_state,
+                                &mut self.config,
+                                &mut self.i18n,
+                            ) {
+                                self.persist_and_notify();
+                            }
                         }
-                    }
-                    SettingsTab::Wizard => {
-                        let daemon_status = self.daemon_status.as_ref();
-                        let action = wizard_view::show(
-                            ui,
-                            &mut self.wizard_state,
-                            &mut self.config,
-                            daemon_status,
-                            &self.i18n,
-                        );
-                        if action == wizard_view::WizardAction::Finished {
-                            self.persist_and_notify();
-                            self.current_tab = SettingsTab::HardwareQa;
+                        SettingsTab::Wizard => {
+                            let daemon_status = self.daemon_status.as_ref();
+                            let action = wizard_view::show(
+                                ui,
+                                &mut self.wizard_state,
+                                &mut self.config,
+                                daemon_status,
+                                &self.i18n,
+                            );
+                            if action == wizard_view::WizardAction::Finished {
+                                self.persist_and_notify();
+                                self.current_tab = SettingsTab::HardwareQa;
+                            }
                         }
-                    }
-                    SettingsTab::HardwareQa => {
-                        if qa_view::show(ui, &mut self.qa_state, &self.i18n) {
-                            self.current_tab = SettingsTab::Keyboard;
+                        SettingsTab::HardwareQa => {
+                            if qa_view::show(ui, &mut self.qa_state, &self.i18n) {
+                                self.current_tab = SettingsTab::Keyboard;
+                            }
                         }
-                    }
-                    SettingsTab::Architecture => {
-                        self.architecture_state.ui(ui, &self.i18n);
-                    }
-                    SettingsTab::About => {
-                        about_view::show(ui, self.daemon_status.as_ref(), &self.i18n);
-                    }
+                        SettingsTab::Architecture => {
+                            self.architecture_state.ui(ui, &self.i18n);
+                        }
+                        SettingsTab::About => {
+                            about_view::show(ui, self.daemon_status.as_ref(), &self.i18n);
+                        }
+                    };
                 });
+            crate::set_accessible_name(ui, scroll_output.id, "Settings Content Area");
         });
 
         // Request a repaint periodically to update battery/connection status
